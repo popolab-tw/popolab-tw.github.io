@@ -28,7 +28,7 @@
   var fine = window.matchMedia && matchMedia('(pointer: fine)').matches;
   var small = window.innerWidth < 820;
   /* 常駐游標的節奏：同時做事的數量、讀字速度、休息時間、最高速度 */
-  var T = { maxBusy: 2, maxBusyMouse: 1, maxBusyPhone: 1, readSpeed: small ? 55 : 75, restMin: 1800, restMax: 4200, travelSpeed: .16, followMax: 3.5, wanderMax: 1 };
+  var T = { tasks: false, maxBusy: 2, maxBusyMouse: 1, maxBusyPhone: 1, readSpeed: small ? 55 : 75, restMin: 1800, restMax: 4200, travelSpeed: .16, followMax: 9, wanderMax: 2.2 };
   var READ_SEL = '.hero-desc,.hero-role,.lede,.w-hook,.prose p,.prose li,.tip p,.row .rt,.tl .what,.card .hook,.step span span,.big-sub,.support p,.small,.ci .ct,.wins .wt,.quote-card blockquote,.h-zh';
   var CLICK_SEL = '.btn,.tab,.card .thumb,.hd-cta,.ci,.play-link,.chip,.wins li a,.tl summary,.link,.circle-cta,.pager a,.motion-toggle,.yt-facade,.media-link,.crumbs a';
   var INSPECT_SEL = '.card .thumb img,.hero-visual img,.h-en,.w-title,.big-stat,.quote-card,.ba,.media-frame,.tilt-card,.stat,.gallery img,.w-stat,.tip';
@@ -240,7 +240,7 @@
     S.running = false; cancelAnimationFrame(S.raf);
     var layer = S.layer, agents = S.agents;
     if (!P.motionOn()) { agents.forEach(function (a) { a.e.classList.add('fade'); }); setTimeout(function () { layer.remove(); }, 600); return; }
-    var keep = small ? 4 : agents.length;
+    var keep = fine ? agents.length : 0;
     var stay = agents.slice(0, keep), leave = agents.slice(keep);
     leave.forEach(function (a) { a.clear(); a.go(a.x < innerWidth / 2 ? -90 : innerWidth + 90, a.y + rand(-60, 60), instant ? 380 : 700, null, function () { a.e.remove(); }); });
     Live.adopt(layer, stay, leave);
@@ -418,24 +418,24 @@
       for (i = 0; i < n; i++) {
         a = this.agents[i];
         if (a.task) { a.stepSeg(dt); a.draw(); continue; }
-        if (running < maxTasks && now >= a.next) {
+        if (T.tasks && running < maxTasks && now >= a.next) {
           if (this.startTask(a)) { running++; a.stepSeg(dt); a.draw(); continue; }
           a.next = now + rand(1200, 2400);
         }
         var tx, ty;
         if (mouseActive) {
-          var ang = a.ph + now / 1000 * .35 * a.w;
+          var ang = a.ph + now / 1000 * .55 * a.w;
           tx = this.mx + Math.cos(ang) * a.r + 10; ty = this.my + Math.sin(ang) * a.r * .8 + 14;
         } else {
-          tx = innerWidth * (.5 + .38 * Math.sin(now / 9000 + a.ph)) + Math.cos(now / 2600 * a.w + a.ph) * 40;
-          ty = innerHeight * (.5 + .32 * Math.sin(now / 7000 * a.w + a.ph * 1.7));
+          tx = innerWidth * (.5 + .36 * Math.sin(now / 5200 + a.ph)) + Math.cos(now / 1300 * a.w + a.ph) * 40;
+          ty = innerHeight * (.5 + .3 * Math.sin(now / 3900 * a.w + a.ph * 1.7));
         }
-        var k = mouseActive ? .0009 : .00035;
+        var k = mouseActive ? .0016 : .00055;
         a.vx += (tx - a.x) * k * dt; a.vy += (ty - a.y) * k * dt;
         for (var j = 0; j < n; j++) {
           if (j === i) continue;
           var b = this.agents[j], dx = a.x - b.x, dy = a.y - b.y, d2 = dx * dx + dy * dy;
-          if (d2 < 900 && d2 > .01) { var f = (900 - d2) / 900 * .04 * dt, d = Math.sqrt(d2); a.vx += dx / d * f; a.vy += dy / d * f; }
+          if (d2 < 900 && d2 > .01) { var f = (900 - d2) / 900 * .06 * dt, d = Math.sqrt(d2); a.vx += dx / d * f; a.vy += dy / d * f; }
         }
         a.vx *= .9; a.vy *= .9;
         /* 最高移動速度（每格像素）：跟隨約每秒 210px，閒晃約每秒 60px */
@@ -456,7 +456,7 @@
   });
   document.addEventListener('popolab:motion', function (e) {
     if (!e.detail.on) { if (S.running && !S.finished) finish(true); Live.stop(); }
-    else if (!Live.on) Live.fresh();
+    else if (fine && !Live.on) Live.fresh();
   });
 
   /* ---------- 進入點 ---------- */
@@ -467,7 +467,7 @@
       else go();
     } else {
       revealAll();
-      if (P.motionOn()) Live.fresh();
+      if (fine && P.motionOn()) Live.fresh();
     }
   }
   window.POPOLAB_SWARM = {
