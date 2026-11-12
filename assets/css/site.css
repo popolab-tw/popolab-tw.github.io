@@ -168,6 +168,13 @@ ul,ol{margin:0;padding:0;list-style:none}
 .card-next .nx{text-align:center}
 .card-next .nx b{display:block;font:400 clamp(44px,4.4vw,72px)/.9 var(--display);color:var(--red)}
 .card-next .nx span{display:block;margin-top:10px;font:700 14px var(--zh);color:var(--ink-2)}
+.card-wip .thumb img{image-rendering:pixelated;filter:none}
+.card-wip:hover .thumb img{filter:saturate(1.15)}
+.card .tag.wip{display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.82);border-color:var(--red)}
+.card .tag.wip i{width:6px;height:6px;border-radius:50%;background:var(--red);animation:wip-blink 1.2s steps(2,start) infinite}
+@keyframes wip-blink{to{visibility:hidden}}
+.wip-title{position:absolute;right:14px;bottom:12px;z-index:1;text-align:right;font:400 clamp(30px,2.8vw,46px)/.88 var(--display);text-transform:uppercase;text-shadow:0 3px 0 #000,0 0 24px rgba(0,0,0,.8)}
+.wip-title .r{color:var(--red)}
 .grid-note{margin-top:22px;font:500 13px var(--zh);color:var(--dim)}
 
 /* 工具列 */

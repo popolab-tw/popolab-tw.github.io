@@ -9,8 +9,9 @@
   'use strict';
   var P = window.POPOLAB || { store: { get: function () { return null; }, set: function () {} }, motionOn: function () { return true; } };
   var root = document.documentElement;
-  var COLORS = ['#ff1e2d', '#2f8cff', '#ffb800', '#22c55e', '#a855f7', '#ff5fc8', '#00c8b4', '#ff7a1a', '#ffffff', '#8ab4ff'];
-  var NAMES = ['波波', 'Claude', null, 'Claude 2', null, null, 'Claude 3', null, null, null];
+  /* 3 個 Claude 負責主要施工，其他熱門 AI 各一個（只用名字和接近品牌的顏色，不用 logo） */
+  var COLORS = ['#d97757', '#e8946f', '#c2603f', '#10a37f', '#4c8df6', '#ffffff', '#4d6bfe', '#9b6bff', '#20b8cd', '#ff6b9a'];
+  var NAMES = ['Claude', 'Claude 2', 'Claude 3', 'ChatGPT', 'Gemini', 'Grok', 'DeepSeek', 'Copilot', 'Perplexity', 'Llama'];
   var fine = window.matchMedia && matchMedia('(pointer: fine)').matches;
   var small = window.innerWidth < 820;
 
@@ -25,7 +26,7 @@
   /* ---------- 游標代理人 ---------- */
   function Agent(layer, i) {
     this.c = COLORS[i % COLORS.length];
-    this.e = el('div', 'sw-agent', cursorSVG(this.c) + (NAMES[i] ? '<b style="background:' + this.c + (this.c === '#ffffff' || this.c === '#ffb800' ? ';color:#111' : '') + '">' + NAMES[i] + '</b>' : ''));
+    this.e = el('div', 'sw-agent', cursorSVG(this.c) + (NAMES[i] ? '<b style="background:' + this.c + (this.c === '#ffffff' ? ';color:#111' : '') + '">' + NAMES[i] + '</b>' : ''));
     layer.appendChild(this.e);
     var side = i % 2 ? 1 : -1;
     this.x = side > 0 ? innerWidth + rand(20, 120) : -rand(20, 120);
@@ -239,8 +240,7 @@
     setTimeout(function () { S.guides.forEach(function (g) { g.remove(); }); }, 500);
     if (fine && P.motionOn()) {
       /* 桌機：把游標交給「跟隨」模式 */
-      Flock.adopt(layer, agents.slice(0, 8));
-      agents.slice(8).forEach(function (a) { a.e.classList.add('fade'); setTimeout(function () { a.e.remove(); }, 600); });
+      Flock.adopt(layer, agents);
     } else {
       /* 手機：游標飛走 */
       S.running = true; S.last = 0;
@@ -262,7 +262,7 @@
     fresh: function () {
       var layer = el('div', 'sw-flock'); layer.setAttribute('aria-hidden', 'true'); document.body.appendChild(layer);
       var list = [];
-      for (var i = 0; i < 8; i++) list.push(new Agent(layer, i));
+      for (var i = 0; i < NAMES.length; i++) list.push(new Agent(layer, i));
       this.adopt(layer, list);
     },
     start: function () {
