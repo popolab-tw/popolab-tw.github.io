@@ -1,7 +1,8 @@
 /* =========================================================
    POPOLAB swarm — 自己寫的輕量版「游標蜂群」
    靈感來自多人協作設計工具的游標；程式為本站原創。
-   1. 施工開場：每次進入頁面，游標在幾秒內「蓋出」第一屏
+   1. 施工開場：每次進入頁面，一群游標在幾秒內分工「蓋出」第一屏
+      （拖框、打字、放大、鋼筆畫線、拉參考線、拖曳複製、點擊上色）
       （可略過、可設定不再播放、捲動即結束、尊重「減少動態效果」）
    2. 常駐游標：開場後留在畫面上
       - 滑鼠在動：大多數游標跟著你
@@ -42,9 +43,21 @@
   var INSPECT_SEL = '.card .thumb img,.hero-visual img,.h-en,.w-title,.big-stat,.quote-card,.ba,.media-frame,.tilt-card,.stat,.gallery img,.w-stat,.tip';
 
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
-  function cursorSVG(c, dark) {
-    return '<svg viewBox="0 0 20 22" aria-hidden="true"><path d="M2.5 1.8l14.6 8.1-6.5 1.7-3.5 6.5z" fill="' + c + '" stroke="' + (dark ? '#111' : '#fff') + '" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+  /* ---------- 游標外觀：會依工具換形狀 ---------- */
+  function arrowSVG(c, dark, w, h) {
+    return '<svg viewBox="0 0 20 22" width="' + (w || 20) + '" height="' + (h || 22) + '" aria-hidden="true"><path d="M2.5 1.8l14.6 8.1-6.5 1.7-3.5 6.5z" fill="' + c + '" stroke="' + (dark ? '#111' : '#fff') + '" stroke-width="1.5" stroke-linejoin="round"/></svg>';
   }
+  function stroke2(d, vb, w, h) {
+    return '<svg viewBox="' + vb + '" width="' + w + '" height="' + h + '" fill="none" aria-hidden="true"><path d="' + d + '" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><path d="' + d + '" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }
+  var TOOLS = {
+    cross: { ox: -10, oy: -10, svg: function () { return stroke2('M10 2v6M10 12v6M2 10h6M12 10h6', '0 0 20 20', 20, 20); } },
+    ibeam: { ox: -6, oy: -11, svg: function () { return stroke2('M3 2h6M6 2v18M3 20h6', '0 0 12 22', 12, 22); } },
+    resize: { ox: -10, oy: -10, svg: function () { return stroke2('M4 4l12 12M4 4h5M4 4v5M16 16h-5M16 16v-5', '0 0 20 20', 20, 20); } },
+    move: { ox: -11, oy: -11, svg: function () { return stroke2('M11 2v18M2 11h18M11 2l-3 3M11 2l3 3M11 20l-3-3M11 20l3-3M2 11l3-3M2 11l3 3M20 11l-3-3M20 11l-3 3', '0 0 22 22', 22, 22); } },
+    pen: { ox: -3, oy: -19, svg: function () { return stroke2('M3 19l2.5-7.5L14 3l3 3-8.5 8.5L3 19zM3 19l5-5', '0 0 20 22', 20, 22); } },
+    dup: { ox: 0, oy: 0, svg: function (c, dark) { return '<svg viewBox="0 0 26 24" width="26" height="24" aria-hidden="true"><path d="M7.5 5.8l12.6 7-5.6 1.5-3 5.6z" fill="#fff" stroke="#111" stroke-width="1.3" stroke-linejoin="round" opacity=".85"/><path d="M2.5 1.8l14.6 8.1-6.5 1.7-3.5 6.5z" fill="' + c + '" stroke="' + (dark ? '#111' : '#fff') + '" stroke-width="1.5" stroke-linejoin="round"/></svg>'; } }
+  };
   function ease(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
   function rand(a, b) { return a + Math.random() * (b - a); }
   function esc(s) { return s.replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
@@ -53,19 +66,29 @@
   function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
 
   /* ---------- 游標代理人 ---------- */
+  /* i < 10：有名字的游標（Claude Opus、Claude Fable、Popo…）；i >= 10：開場時來幫忙的無名游標 */
   function Agent(layer, i) {
-    var r = ROSTER[i % ROSTER.length];
-    this.i = i; this.c = r.c;
-    this.e = el('div', 'sw-agent', cursorSVG(r.c, r.dark) + '<b style="background:' + r.c + (r.dark ? ';color:#111' : '') + '">' + r.n + '</b>');
+    var named = i < ROSTER.length, r = named ? ROSTER[i] : { c: '#ffffff', dark: true };
+    this.i = i; this.c = r.c; this.dark = !!r.dark; this.named = named;
+    this.e = el('div', 'sw-agent' + (named ? '' : ' anon'), '<i class="tool"></i>' + (named ? '<b style="background:' + r.c + (r.dark ? ';color:#111' : '') + '">' + r.n + '</b>' : ''));
+    this.toolEl = this.e.querySelector('.tool');
+    this.setTool('arrow');
     layer.appendChild(this.e);
     var side = i % 2 ? 1 : -1;
-    this.x = side > 0 ? innerWidth + rand(20, 120) : -rand(20, 120);
+    this.x = side > 0 ? innerWidth + rand(10, 50) : -rand(10, 50);
     this.y = rand(innerHeight * .15, innerHeight * .85);
     this.vx = 0; this.vy = 0; this.seg = null; this.queue = []; this.task = null; this.next = 0; this.recent = []; this.cont = null; this.anchor = null; this.hopAt = 0;
     this.home = { x: rand(innerWidth * .1, innerWidth * .9), y: rand(innerHeight * .2, innerHeight * .8) };
     this.ph = rand(0, Math.PI * 2); this.w = rand(.6, 1.2); this.r = rand(46, 120);
     this.draw();
   }
+  Agent.prototype.setTool = function (name) {
+    if (this.tool === name) return;
+    this.tool = name;
+    var t = TOOLS[name];
+    this.toolEl.innerHTML = t ? t.svg(this.c, this.dark) : arrowSVG(this.c, this.dark);
+    this.toolEl.style.transform = t ? 'translate(' + t.ox + 'px,' + t.oy + 'px)' : '';
+  };
   Agent.prototype.draw = function () { this.e.style.transform = 'translate3d(' + this.x.toFixed(1) + 'px,' + this.y.toFixed(1) + 'px,0)'; };
   Agent.prototype.go = function (x, y, dur, onUpdate, onDone, curve) { this.queue.push({ x: x, y: y, dur: dur, u: onUpdate, d: onDone, ez: curve === true ? 'lin' : curve }); };
   Agent.prototype.clear = function () { this.queue = []; this.seg = null; };
@@ -87,14 +110,21 @@
     this.vx *= .86; this.vy *= .86; this.x += this.vx; this.y += this.vy;
   };
   Agent.prototype.press = function () { var e = this.e; e.classList.add('press'); setTimeout(function () { e.classList.remove('press'); }, 170); };
-  /* 走過去要花的時間：距離 ÷ 速度上限（約每秒 160px，加上緩動，最快約每秒 300px） */
   /* 跑去做事：和開場同一條加速減速曲線，但時間拉長約 1.5 倍，最高速度比開場低一些 */
   Agent.prototype.travel = function (x, y) { return Math.max(340, Math.min(1000, Math.hypot(x - this.x, y - this.y) / 1.4)); };
+  /* 開場時跑得比較快 */
+  Agent.prototype.dash = function (x, y) { return Math.max(200, Math.min(560, Math.hypot(x - this.x, y - this.y) / 2.2)); };
 
   /* =========================================================
      1. 施工開場
+     把第一屏拆成很多「圖層」，讓一群游標分工重建：
+     - 十字游標拖出灰色佔位框，再填上真的內容（圖片由上往下掃出來）
+     - I 字游標逐字打字；大標題先用小字打完，再拖曳角落放大
+     - 鋼筆點出分隔線；從尺規拉出紅色參考線
+     - 重複的元件先做一個，再拖曳複製出其他幾個，然後改字
+     - 紅色按鈕先是灰的，被點一下才變紅
      ========================================================= */
-  var S = { running: false, layer: null, agents: [], boxes: [], guides: [], hud: null, t0: 0, raf: 0, done: 0, total: 0, finished: false };
+  var S = { running: false, layer: null, agents: [], boxes: [], guides: [], hud: null, t0: 0, raf: 0, done: 0, total: 0, finished: false, tasks: [], touched: [] };
 
   function shouldBuild() {
     if (!document.querySelector('[data-build]')) return false;
@@ -103,93 +133,307 @@
     return true;
   }
   function revealAll() {
-    document.querySelectorAll('[data-build]').forEach(function (n) { n.style.opacity = ''; n.style.clipPath = ''; n.style.transition = ''; });
+    S.touched.forEach(function (n) { n.style.visibility = ''; n.style.clipPath = ''; n.style.transform = ''; n.style.transformOrigin = ''; n.style.filter = ''; n.style.transition = ''; n.classList.remove('sw-in', 'sw-pop'); });
+    document.querySelectorAll('[data-build]').forEach(function (n) { n.style.visibility = ''; n.style.opacity = ''; n.style.clipPath = ''; });
+    S.touched = [];
     root.classList.remove('swarm-pending');
   }
-  function buildTargets() {
-    var vis = [];
-    document.querySelectorAll('[data-build]').forEach(function (n) {
-      var r = n.getBoundingClientRect();
-      if (r.width < 2 || r.height < 2 || r.top > innerHeight * 1.02) n.style.opacity = '1';
-      else vis.push({ n: n, r: r, type: n.getAttribute('data-build') || 'rect' });
-    });
-    return vis;
+  function touch(n) { if (S.touched.indexOf(n) < 0) S.touched.push(n); return n; }
+  function hideEl(n) { touch(n).style.visibility = 'hidden'; }
+  function showEl(n, anim) {
+    touch(n).style.visibility = 'visible';
+    var r = n.closest('[data-build]');
+    if (r && r !== n) touch(r).style.visibility = 'visible';
+    if (anim) { n.classList.remove(anim); void n.offsetWidth; n.classList.add(anim); }
   }
+
+  /* ---- 把第一屏拆成圖層 ---- */
+  function hasText(n) { for (var c = n.firstChild; c; c = c.nextSibling) if (c.nodeType === 3 && /\S/.test(c.nodeValue)) return true; return false; }
+  function deco(n, cs) {
+    var bg = cs.backgroundColor, hasBg = bg && bg !== 'transparent' && !/rgba\([^)]*,\s*0\)$/.test(bg);
+    var sides = ['Top', 'Right', 'Bottom', 'Left'].map(function (s) { return parseFloat(cs['border' + s + 'Width']) > 0 && cs['border' + s + 'Style'] !== 'none'; });
+    if (hasBg || (cs.backgroundImage !== 'none' && !/text/.test(cs.webkitBackgroundClip || cs.backgroundClip || ''))) return 'rect';
+    if (sides.every(Boolean)) return 'rect';
+    if (sides[0]) return 'line-top';
+    if (sides[2]) return 'line-bottom';
+    return null;
+  }
+  function gkey(n) { return n.tagName + '.' + (n.classList[0] || ''); }
+  function similar(a, b) {
+    var ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+    if (!ra.height || !rb.height) return false;
+    var hr = Math.max(ra.height, rb.height) / Math.min(ra.height, rb.height);
+    return hr < 1.8 && a.children.length === b.children.length;
+  }
+  function inFirstScreen(r) { return r.width >= 1 && r.height >= 1 && r.top < innerHeight * .98 && r.bottom > 0; }
+  function T_(type, n, r, deps) { var t = { type: type, el: n, r: r, deps: deps || [], done: false, taken: false }; hideEl(n); S.tasks.push(t); return t; }
+
+  function walk(n, parent) {
+    var cs = getComputedStyle(n);
+    if (cs.display === 'none') return [];
+    var r = n.getBoundingClientRect();
+    if (!inFirstScreen(r)) return [];
+    var before = S.tasks.length, deps = parent ? [parent] : [], tag = n.tagName;
+    if (n.getAttribute('data-build') === 'mega') { T_('mega', n, r, deps); return S.tasks.slice(before); }
+    if (tag === 'IMG' || tag === 'VIDEO' || tag === 'PICTURE' || tag === 'IFRAME') { T_('image', n, r, deps); return S.tasks.slice(before); }
+    if (tag === 'svg' || tag === 'SVG') { T_(r.width > 40 ? 'image' : 'pop', n, r, deps); return S.tasks.slice(before); }
+    var d = deco(n, cs), fs = parseFloat(cs.fontSize) || 16;
+    if (hasText(n)) {
+      var t = T_(d === 'rect' ? 'rect' : (fs >= 34 ? 'grow' : 'text'), n, r, deps);
+      if (n.matches('.btn-red')) t.restyle = true;
+      return S.tasks.slice(before);
+    }
+    var me = parent;
+    if (d) { me = T_(d === 'rect' ? 'rect' : 'line', n, r, deps); me.edge = d; }
+    walkKids(n, me);
+    return S.tasks.slice(before);
+  }
+  function walkKids(n, me) {
+    var kids = Array.prototype.slice.call(n.children).filter(function (k) { return k.tagName !== 'BR'; }), i = 0;
+    while (i < kids.length) {
+      var j = i + 1;
+      while (j < kids.length && gkey(kids[j]) === gkey(kids[i]) && similar(kids[i], kids[j])) j++;
+      if (j - i >= 2) group(kids.slice(i, j), me); else walk(kids[i], me);
+      i = j;
+    }
+  }
+  /* 一組重複元件：第一個正常做，其他用「拖曳複製」 */
+  function group(list, parent) {
+    var mt = walk(list[0], parent);
+    if (!mt.length) { list.slice(1).forEach(function (k) { walk(k, parent); }); return; }
+    list.slice(1).forEach(function (k) {
+      var r = k.getBoundingClientRect();
+      if (!inFirstScreen(r)) return;
+      var t = T_('dup', k, r, mt.concat(parent ? [parent] : []));
+      t.master = list[0];
+    });
+  }
+  function collect() {
+    S.tasks = [];
+    var roots = Array.prototype.slice.call(document.querySelectorAll('[data-build]'));
+    var used = [];
+    roots.forEach(function (rt) {
+      if (used.indexOf(rt) > -1) return;
+      var r = rt.getBoundingClientRect();
+      if (!inFirstScreen(r)) { touch(rt).style.visibility = 'visible'; return; }
+      /* 相鄰、外觀一樣的幾個區塊（例如三個數據）也當成一組重複元件 */
+      var run = [rt], nx = rt.nextElementSibling;
+      while (nx && nx.hasAttribute('data-build') && gkey(nx) === gkey(rt) && similar(rt, nx)) { run.push(nx); nx = nx.nextElementSibling; }
+      run.forEach(function (x) { used.push(x); });
+      if (run.length > 1) group(run, null); else walk(rt, null);
+    });
+    /* 先做上面的，再做下面的；大區塊和參考線優先 */
+    S.tasks.forEach(function (t, k) { t.order = Math.round(t.r.top / 70) * 10000 + t.r.left + k * .001; });
+    S.tasks.sort(function (a, b) { return a.order - b.order; });
+  }
+
+  /* ---- 畫面上的施工輔助：尺規、參考線、框 ---- */
   function makeBox(parent, r, cls) {
     var b = el('div', 'sw-box' + (cls ? ' ' + cls : ''), '<i></i><i></i><i></i><i></i><em></em>');
     b.style.left = r.left + 'px'; b.style.top = r.top + 'px'; b.style.width = (r.width || 0) + 'px'; b.style.height = (r.height || 0) + 'px';
     parent.appendChild(b); return b;
   }
   function killBox(b, delay) { setTimeout(function () { b.classList.add('gone'); setTimeout(function () { b.remove(); }, 500); }, delay || 0); }
+  function sizeBox(b, x, y, w, h) { b.style.left = x + 'px'; b.style.top = y + 'px'; b.style.width = Math.max(0, w) + 'px'; b.style.height = Math.max(0, h) + 'px'; b.querySelector('em').textContent = Math.round(w) + ' × ' + Math.round(h); }
+  function addRulers() {
+    var top = el('div', 'sw-ruler'), left = el('div', 'sw-ruler v'), html = '', vh = '';
+    for (var x = 100; x < innerWidth; x += 100) html += '<span style="left:' + x + 'px">' + x + '</span>';
+    for (var y = 100; y < innerHeight; y += 100) vh += '<span style="top:' + y + 'px">' + y + '</span>';
+    top.innerHTML = html; left.innerHTML = vh;
+    S.layer.appendChild(top); S.layer.appendChild(left); S.guides.push(top, left);
+    requestAnimationFrame(function () { top.classList.add('on'); left.classList.add('on'); });
+  }
   function hudUpdate() {
     if (!S.hud) return;
     S.hud.querySelector('.cnt').textContent = S.done + ' / ' + S.total + ' 圖層';
     S.hud.querySelector('.bar i').style.width = (S.total ? S.done / S.total * 100 : 0) + '%';
+    var w = S.hud.querySelector('.who'); if (w) w.textContent = S.agents.length + ' 位 agent';
   }
-  function runTask(a, t, next) {
-    var r = t.r, n = t.n;
-    a.go(r.left, r.top, Math.max(240, Math.min(620, Math.hypot(r.left - a.x, r.top - a.y) / 2.1)), null, function () {
-      var b = makeBox(S.layer, { left: r.left, top: r.top, width: 0, height: 0 }), lab = b.querySelector('em');
-      S.boxes.push(b);
-      var w = Math.max(r.width, 4), h = Math.max(r.height, 4);
-      a.go(r.left + w, r.top + h, Math.max(320, Math.min(560, (w + h) / 2.4)), function (p) {
-        var e = ease(p);
-        b.style.width = (w * e) + 'px'; b.style.height = (h * e) + 'px';
-        lab.textContent = Math.round(w * e) + ' × ' + Math.round(h * e);
-      }, function () {
-        if (t.type === 'mega') {
-          n.style.clipPath = 'inset(0 100% 0 0)'; n.style.opacity = '1';
-          a.go(r.left, r.top + h * .55, 260, null, function () {
-            a.go(r.left + w, r.top + h * .55, 900, function (p) { n.style.clipPath = 'inset(0 ' + ((1 - ease(p)) * 100).toFixed(2) + '% 0 0)'; }, function () {
-              n.style.clipPath = ''; killBox(b, 150); finishTask(a, next);
-            });
-          });
-        } else if (t.type === 'type') {
-          var html = n.innerHTML, text = n.textContent, i = 0;
-          n.innerHTML = ''; n.style.opacity = '1'; b.classList.add('wire');
-          var iv = setInterval(function () {
-            i++;
-            if (i >= text.length || S.finished) { clearInterval(iv); n.innerHTML = html; killBox(b, 120); finishTask(a, next); return; }
-            n.innerHTML = esc(text.slice(0, i)) + '<span class="sw-caret"></span>';
-            var c = n.querySelector('.sw-caret').getBoundingClientRect();
-            a.x = c.left + 2; a.y = c.top + c.height * .5; a.draw();
-          }, Math.max(45, Math.min(90, 1200 / Math.max(text.length, 1))));
-        } else {
-          b.classList.add('wire');
-          setTimeout(function () { n.style.transition = 'opacity .35s ease'; n.style.opacity = '1'; killBox(b, 180); finishTask(a, next); }, small ? 160 : 220);
-        }
-      });
-    });
-  }
-  function finishTask(a, next) { S.done++; hudUpdate(); a.go(a.x + rand(-60, 60), a.y + rand(20, 70), 220, null, next); }
-  function addGuides() {
-    var ruler = el('div', 'sw-ruler'), html = '';
-    for (var x = 100; x < innerWidth; x += 100) html += '<span style="left:' + x + 'px">' + x + '</span>';
-    ruler.innerHTML = html; S.layer.appendChild(ruler); S.guides.push(ruler);
-    var first = document.querySelector('[data-build="mega"]') || document.querySelector('[data-build]');
-    var xs = [[innerWidth / 2, false]];
-    var pg = document.querySelector('.page');
-    if (pg) { var cs = getComputedStyle(pg); var pl = pg.getBoundingClientRect().left + parseFloat(cs.paddingLeft); xs.push([pl, true]); xs.push([pg.getBoundingClientRect().right - parseFloat(cs.paddingRight), false]); }
-    xs.forEach(function (v) { var g = el('div', 'sw-guide v' + (v[1] ? ' red' : '')); g.style.left = v[0] + 'px'; S.layer.appendChild(g); S.guides.push(g); });
-    if (first) { var mr = first.getBoundingClientRect(); [mr.top + mr.height * .1, mr.bottom - mr.height * .08].forEach(function (y) { var g = el('div', 'sw-guide h'); g.style.top = y + 'px'; S.layer.appendChild(g); S.guides.push(g); }); }
-    requestAnimationFrame(function () { S.guides.forEach(function (g) { g.classList.add('on'); }); });
-  }
-  function makeHud(n) {
+  function makeHud() {
     var dots = '';
     for (var i = 0; i < 4; i++) dots += '<i style="background:' + ROSTER[i].c + '"></i>';
-    var h = el('div', 'sw-hud', '<span class="dots">' + dots + '</span><span class="who">' + n + ' 位 agent</span><span class="bar"><i></i></span><span class="cnt">0 / 0 圖層</span><button type="button" class="skip">略過</button><button type="button" class="never" title="之後進入頁面都不再播放開場">不再播放</button>');
+    var h = el('div', 'sw-hud', '<span class="dots">' + dots + '</span><span class="who"></span><span class="bar"><i></i></span><span class="cnt">0 / 0 圖層</span><button type="button" class="skip">略過</button><button type="button" class="never" title="之後進入頁面都不再播放開場">不再播放</button>');
     h.setAttribute('role', 'status');
     document.body.appendChild(h);
     h.querySelector('.skip').addEventListener('click', function () { finish(true); });
     h.querySelector('.never').addEventListener('click', function () { P.store.set('popolab-intro', 'off'); finish(true); });
     return h;
   }
-  function buildLoop(now) {
-    if (!S.running) return;
-    var dt = Math.min(50, now - (S.last || now)); S.last = now;
-    S.agents.forEach(function (a) { if (!a.stepSeg(dt)) a.idle(dt, now); a.draw(); });
-    S.raf = requestAnimationFrame(buildLoop);
+
+  /* ---- 打字（可以先縮小打，之後再放大） ---- */
+  function typeInto(a, n, ms, done) {
+    var html = n.innerHTML, text = n.textContent.replace(/\s+/g, ' ').trim(), i = 0;
+    if (!text) { done(); return; }
+    var step = Math.max(12, Math.min(60, ms / text.length));
+    n.innerHTML = '<span class="sw-caret"></span>';
+    a.setTool('ibeam');
+    var iv = setInterval(function () {
+      i++;
+      if (i >= text.length || S.finished) { clearInterval(iv); n.innerHTML = html; done(); return; }
+      n.innerHTML = esc(text.slice(0, i)) + '<span class="sw-caret"></span>';
+      var c = n.querySelector('.sw-caret'); if (!c) return;
+      var cr = c.getBoundingClientRect(); a.x = cr.right + 1; a.y = cr.top + cr.height * .5; a.draw();
+    }, step);
   }
+
+  /* ---- 每種圖層的做法 ---- */
+  var DO = {
+    rect: function (a, t, done) {
+      var r = t.r;
+      a.setTool('cross');
+      a.go(r.left, r.top, a.dash(r.left, r.top), null, function () {
+        var b = makeBox(S.layer, { left: r.left, top: r.top, width: 0, height: 0 }); S.boxes.push(b);
+        a.go(r.right, r.bottom, Math.max(260, Math.min(520, (r.width + r.height) / 2.6)), function (p) { var e = ease(p); sizeBox(b, r.left, r.top, r.width * e, r.height * e); }, function () {
+          b.classList.add('wire');
+          setTimeout(function () {
+            showEl(t.el, 'sw-in');
+            if (!t.restyle) { killBox(b, 140); done(); return; }
+            /* 紅色按鈕：先是灰的，點一下才變紅 */
+            t.el.style.filter = 'grayscale(1) brightness(.55)'; t.el.style.transition = 'filter .35s ease';
+            a.setTool('arrow');
+            var cx = r.left + r.width * .5, cy = r.top + r.height * .5;
+            a.go(cx, cy, 260, null, function () {
+              a.press(); ripple(cx, cy, '#ff1e2d');
+              t.el.style.filter = ''; killBox(b, 120);
+              setTimeout(done, 200);
+            });
+          }, 140);
+        });
+      });
+    },
+    image: function (a, t, done) {
+      var r = t.r;
+      a.setTool('cross');
+      a.go(r.left, r.top, a.dash(r.left, r.top), null, function () {
+        var b = makeBox(S.layer, { left: r.left, top: r.top, width: 0, height: 0 }); S.boxes.push(b);
+        a.go(r.right, r.bottom, Math.max(320, Math.min(620, (r.width + r.height) / 2.4)), function (p) { var e = ease(p); sizeBox(b, r.left, r.top, r.width * e, r.height * e); }, function () {
+          b.classList.add('wire');
+          t.el.style.clipPath = 'inset(0 0 100% 0)'; showEl(t.el);
+          /* 由上往下掃出來 */
+          a.go(r.right, r.top, 160, null, function () {
+            a.go(r.right, r.bottom, Math.max(500, Math.min(900, r.height * 1.4)), function (p) { t.el.style.clipPath = 'inset(0 0 ' + ((1 - p) * 100).toFixed(1) + '% 0)'; }, function () {
+              t.el.style.clipPath = ''; killBox(b, 100); done();
+            }, true);
+          });
+        });
+      });
+    },
+    text: function (a, t, done) {
+      var r = t.r, big = r.height > 22;
+      a.setTool(big ? 'cross' : 'ibeam');
+      a.go(r.left, r.top + (big ? 0 : Math.min(r.height, 20) * .5), a.dash(r.left, r.top), null, function () {
+        var b = null;
+        var go = function () { showEl(t.el); typeInto(a, t.el, Math.min(1000, 35 * t.el.textContent.length + 200), function () { if (b) killBox(b, 80); done(); }); };
+        if (!big) { go(); return; }
+        b = makeBox(S.layer, { left: r.left, top: r.top, width: 0, height: 0 }, 'text'); S.boxes.push(b);
+        a.go(r.right, r.bottom, Math.max(200, Math.min(380, (r.width + r.height) / 3)), function (p) { var e = ease(p); sizeBox(b, r.left, r.top, r.width * e, r.height * e); }, go);
+      });
+    },
+    /* 大標題：先用小字打完，再拖曳右下角放大到正確大小 */
+    grow: function (a, t, done, mega) {
+      var r = t.r, n = t.el, cs = getComputedStyle(n), fs = parseFloat(cs.fontSize) || 40;
+      var s0 = mega ? .15 : Math.max(.24, Math.min(.6, 18 / fs));
+      a.setTool('cross');
+      a.go(r.left, r.top, a.dash(r.left, r.top), null, function () {
+        var b = makeBox(S.layer, { left: r.left, top: r.top, width: 0, height: 0 }, 'text'); S.boxes.push(b);
+        a.go(r.left + r.width * s0, r.top + r.height * s0, 260, function (p) { var e = ease(p); sizeBox(b, r.left, r.top, r.width * s0 * e, r.height * s0 * e); }, function () {
+          touch(n).style.transformOrigin = '0 0'; n.style.transform = 'scale(' + s0 + ')';
+          showEl(n);
+          typeInto(a, n, mega ? 520 : 420, function () {
+            if (S.finished) return done();
+            /* 換成縮放游標，抓住右下角往外拉 */
+            var cx = r.left + r.width * s0, cy = r.top + r.height * s0;
+            a.setTool('resize');
+            a.go(cx, cy, 200, null, function () {
+              a.press();
+              a.go(r.right, r.bottom, mega ? 1300 : Math.max(650, Math.min(1100, (r.width + r.height) * 1.2)), function (p) {
+                var e = ease(p), s = s0 + (1 - s0) * e;
+                n.style.transform = 'scale(' + s + ')'; sizeBox(b, r.left, r.top, r.width * s, r.height * s);
+              }, function () { n.style.transform = ''; killBox(b, 120); done(); });
+            });
+          });
+        });
+      });
+    },
+    mega: function (a, t, done) { DO.grow(a, t, done, true); },
+    /* 鋼筆：點起點，拉出橡皮筋線，點終點 */
+    line: function (a, t, done) {
+      var r = t.r, y = t.edge === 'line-bottom' ? r.bottom - 1 : r.top;
+      a.setTool('pen');
+      a.go(r.left, y, a.dash(r.left, y), null, function () {
+        a.press();
+        var ln = el('div', 'sw-pen'); ln.style.left = r.left + 'px'; ln.style.top = y + 'px'; ln.style.width = '0px'; S.layer.appendChild(ln); S.boxes.push(ln);
+        var dot = el('div', 'sw-dot'); dot.style.left = r.left + 'px'; dot.style.top = y + 'px'; S.layer.appendChild(dot); S.boxes.push(dot);
+        a.go(r.right, y, Math.max(300, Math.min(700, r.width / 2.4)), function (p) { ln.style.width = (r.width * ease(p)) + 'px'; }, function () {
+          a.press(); showEl(t.el);
+          var d2 = el('div', 'sw-dot'); d2.style.left = r.right + 'px'; d2.style.top = y + 'px'; S.layer.appendChild(d2); S.boxes.push(d2);
+          killBox(ln, 250); killBox(dot, 250); killBox(d2, 250); done();
+        });
+      });
+    },
+    /* 小圖示：點一下彈出來 */
+    pop: function (a, t, done) {
+      var r = t.r, cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      a.setTool('arrow');
+      a.go(cx, cy, a.dash(cx, cy), null, function () { a.press(); showEl(t.el, 'sw-pop'); setTimeout(done, 160); });
+    },
+    /* 拖曳複製：選取第一個，按住拖到下一個位置，放開後改字 */
+    dup: function (a, t, done) {
+      var m = t.master.getBoundingClientRect(), r = t.r;
+      var gx = m.left + m.width * .5, gy = m.top + m.height * .5;
+      a.setTool('arrow');
+      a.go(gx, gy, a.dash(gx, gy), null, function () {
+        var sel = makeBox(S.layer, m, 'sel'); sel.querySelector('em').textContent = '⌥ 拖曳複製'; S.boxes.push(sel);
+        setTimeout(function () {
+          a.setTool('dup'); a.press();
+          var ghost = makeBox(S.layer, m, 'ghost'); S.boxes.push(ghost);
+          var dx = r.left - m.left, dy = r.top - m.top;
+          var meas = el('div', 'sw-meas'); S.layer.appendChild(meas); S.boxes.push(meas);
+          a.go(gx + dx, gy + dy, Math.max(380, Math.min(700, Math.hypot(dx, dy) * 1.1)), function (p) {
+            var e = ease(p), x = m.left + dx * e, y = m.top + dy * e;
+            ghost.style.left = x + 'px'; ghost.style.top = y + 'px';
+            /* 紅色間距量測 */
+            var horiz = Math.abs(dx) >= Math.abs(dy);
+            if (horiz) { var gap = Math.max(0, x - m.right); meas.style.cssText = 'left:' + m.right + 'px;top:' + (m.top + m.height / 2) + 'px;width:' + gap + 'px;height:1px'; meas.setAttribute('data-v', Math.round(gap)); }
+            else { var gp = Math.max(0, y - m.bottom); meas.style.cssText = 'left:' + (m.left + m.width / 2) + 'px;top:' + m.bottom + 'px;width:1px;height:' + gp + 'px'; meas.setAttribute('data-v', Math.round(gp)); }
+          }, function () {
+            showEl(t.el, 'sw-in');
+            killBox(ghost, 60); killBox(sel, 60); killBox(meas, 300);
+            /* 放開後改字：把複製出來的文字重新打一次 */
+            var leaves = [];
+            if (hasText(t.el)) leaves.push(t.el);
+            else t.el.querySelectorAll('*').forEach(function (x) { if (hasText(x) && leaves.length < 2) leaves.push(x); });
+            var k = 0;
+            (function nextLeaf() {
+              if (k >= leaves.length || S.finished) { a.setTool('arrow'); done(); return; }
+              var lf = leaves[k++], lr = lf.getBoundingClientRect();
+              a.go(lr.left, lr.top + lr.height / 2, 180, null, function () { typeInto(a, lf, 320, nextLeaf); });
+            })();
+          });
+        }, 160);
+      });
+    }
+  };
+  function ripple(x, y, c) { var rp = el('div', 'sw-ripple'); rp.style.left = x + 'px'; rp.style.top = y + 'px'; rp.style.borderColor = c; S.layer.appendChild(rp); setTimeout(function () { rp.remove(); }, 900); }
+
+  /* ---- 一開始先從尺規拉兩條紅色參考線 ---- */
+  function guideTask(a, vertical, pos, done) {
+    a.setTool('arrow');
+    var sx = vertical ? pos : 9, sy = vertical ? 9 : pos;
+    a.go(vertical ? pos : 9, vertical ? 9 : pos, a.dash(sx, sy), null, function () {
+      a.press();
+      var g = el('div', 'sw-guide on red ' + (vertical ? 'v' : 'h')), lab = el('div', 'sw-gl');
+      if (vertical) { g.style.left = pos + 'px'; } else { g.style.top = pos + 'px'; }
+      S.layer.appendChild(g); S.layer.appendChild(lab); S.guides.push(g, lab);
+      var from = vertical ? { x: pos, y: 9 } : { x: 9, y: pos };
+      var to = vertical ? { x: pos, y: innerHeight * .55 } : { x: innerWidth * .45, y: pos };
+      a.go(to.x, to.y, 520, function (p) {
+        lab.style.left = (a.x + 14) + 'px'; lab.style.top = (a.y + 10) + 'px';
+        lab.textContent = vertical ? 'X ' + Math.round(pos) : 'Y ' + Math.round(pos);
+      }, function () { setTimeout(function () { lab.remove(); }, 400); done(); });
+    });
+  }
+
   function interrupt(e) {
     if (e.type === 'keydown' && e.key !== 'Escape') return;
     if (e.type === 'scroll' && window.scrollY < 40) return;
@@ -202,55 +446,100 @@
     window[f]('keydown', interrupt);
     window[f]('scroll', interrupt, { passive: true });
   }
+
+  /* ---- 派工：每個閒著的游標挑「離自己最近、可以開工」的圖層 ---- */
+  function pickTask(a) {
+    var best = null, bd = 1e9, seen = 0;
+    for (var i = 0; i < S.tasks.length && seen < 7; i++) {
+      var t = S.tasks[i];
+      if (t.taken || t.done) continue;
+      var ok = true;
+      for (var j = 0; j < t.deps.length; j++) if (!t.deps[j].done) { ok = false; break; }
+      if (!ok) continue;
+      seen++;
+      var d = Math.hypot(t.r.left - a.x, t.r.top - a.y) + i * 18;
+      if (d < bd) { bd = d; best = t; }
+    }
+    return best;
+  }
+  function work(a) {
+    if (S.finished) return;
+    var t = pickTask(a);
+    if (!t) {
+      if (S.done >= S.total) { complete(); return; }
+      a.task = null; setTimeout(function () { work(a); }, 90); return;
+    }
+    t.taken = true; a.task = t;
+    try {
+      DO[t.type](a, t, function () {
+        if (t.done) return;
+        t.done = true; S.done++; hudUpdate(); a.task = null; a.setTool('arrow');
+        a.go(a.x + rand(-50, 50), a.y + rand(14, 50), 180, null, function () { work(a); });
+      });
+    } catch (err) { t.done = true; S.done++; showEl(t.el); work(a); }
+  }
+
+  function buildLoop(now) {
+    if (!S.running) return;
+    var dt = Math.min(50, now - (S.last || now)); S.last = now;
+    S.agents.forEach(function (a) { if (!a.stepSeg(dt) && !a.task) a.idle(dt, now); a.draw(); });
+    S.raf = requestAnimationFrame(buildLoop);
+  }
   function start() {
     window.POPOLAB_SWARM_STARTED = true;
     Live.stop(true);
     root.classList.add('swarm-pending');
-    S.finished = false; S.done = 0; S.boxes = []; S.guides = [];
+    S.finished = false; S.done = 0; S.boxes = []; S.guides = []; S.touched = [];
     S.layer = el('div', 'sw-layer'); S.layer.setAttribute('aria-hidden', 'true');
     document.body.appendChild(S.layer);
-    var targets = buildTargets();
-    S.total = targets.length;
-    var count = small ? 6 : 10, workers = small ? 3 : 4;
+    collect();
+    var count = small ? 8 : 18;
     S.agents = [];
     for (var i = 0; i < count; i++) S.agents.push(new Agent(S.layer, i));
-    S.hud = makeHud(count); hudUpdate();
-    addGuides();
+    S.total = S.tasks.length + 2;
+    S.hud = makeHud(); hudUpdate();
+    addRulers();
     S.t0 = performance.now(); S.running = true; S.last = 0;
     S.raf = requestAnimationFrame(buildLoop);
     bindInterrupts(true);
-    var qi = 0, active = 0;
-    function pump(a) {
-      if (S.finished) return;
-      if (qi >= targets.length) { active--; if (active <= 0) complete(); return; }
-      runTask(a, targets[qi++], function () { pump(a); });
-    }
-    for (var k = 0; k < workers; k++) { active++; (function (a, d) { setTimeout(function () { pump(a); }, d); })(S.agents[k], 250 + k * 160); }
-    S.safety = setTimeout(function () { finish(true); }, 12000);
+    /* 參考線：內容的左邊界、第一個大標題的底部 */
+    var pg = document.querySelector('.page'), gx = 56, first = document.querySelector('[data-build="mega"]');
+    if (pg) { var cs = getComputedStyle(pg); gx = pg.getBoundingClientRect().left + parseFloat(cs.paddingLeft); }
+    var gy = first ? first.getBoundingClientRect().bottom - 6 : innerHeight * .4;
+    var ga = S.agents[2], gb = S.agents[5 % count];
+    ga.task = gb.task = { type: 'guide' };
+    var gdone = function (a) { return function () { S.done++; hudUpdate(); a.task = null; a.setTool('arrow'); work(a); }; };
+    setTimeout(function () { guideTask(ga, true, gx, gdone(ga)); }, 120);
+    setTimeout(function () { guideTask(gb, false, gy, gdone(gb)); }, 260);
+    S.agents.forEach(function (a, k) { if (a !== ga && a !== gb) setTimeout(function () { work(a); }, 60 + k * 28); });
+    S.safety = setTimeout(function () { finish(true); }, 16000);
   }
   function complete() {
-    if (S.finished) return;
+    if (S.finished || S.completing) return;
+    S.completing = true;
     var secs = ((performance.now() - S.t0) / 1000).toFixed(1);
     if (S.hud) {
-      S.hud.innerHTML = '<span class="dots">' + S.hud.querySelector('.dots').innerHTML + '</span><span>由 ' + S.agents.length + ' 位 agent 在 ' + secs + ' 秒內蓋好</span><button type="button" class="go">上線 ✓</button>';
+      S.hud.innerHTML = '<span class="dots">' + S.hud.querySelector('.dots').innerHTML + '</span><span>由 ' + S.agents.length + ' 位 agent 在 ' + secs + ' 秒內蓋好 ' + S.total + ' 個圖層</span><button type="button" class="go">上線 ✓</button>';
       S.hud.querySelector('.go').addEventListener('click', function () { finish(false); });
     }
     S.goTimer = setTimeout(function () { finish(false); }, 1400);
   }
   function finish(instant) {
     if (S.finished) return;
-    S.finished = true;
+    S.finished = true; S.completing = false;
     clearTimeout(S.safety); clearTimeout(S.goTimer);
     bindInterrupts(false);
     revealAll();
     S.boxes.forEach(function (b) { killBox(b, 0); });
-    S.guides.forEach(function (g) { g.classList.remove('on'); });
+    S.guides.forEach(function (g) { g.classList.remove('on'); g.classList.add('gone'); });
     var guides = S.guides; setTimeout(function () { guides.forEach(function (g) { g.remove(); }); }, 500);
     if (S.hud) { var h = S.hud; h.classList.add('out'); setTimeout(function () { h.remove(); }, 500); S.hud = null; }
     S.running = false; cancelAnimationFrame(S.raf);
     var layer = S.layer, agents = S.agents;
+    agents.forEach(function (a) { a.task = null; a.setTool('arrow'); });
     if (!P.motionOn()) { agents.forEach(function (a) { a.e.classList.add('fade'); }); setTimeout(function () { layer.remove(); }, 600); return; }
-    var keep = small ? 4 : agents.length;
+    /* 有名字的游標留下來，其他的飛走 */
+    var keep = small ? 4 : ROSTER.length;
     var stay = agents.slice(0, keep), leave = agents.slice(keep);
     leave.forEach(function (a) { a.clear(); a.go(a.x < innerWidth / 2 ? -90 : innerWidth + 90, a.y + rand(-60, 60), instant ? 380 : 700, null, function () { a.e.remove(); }); });
     Live.adopt(layer, stay, leave);
