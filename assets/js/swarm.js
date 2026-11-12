@@ -1,6 +1,7 @@
 /* =========================================================
    POPOLAB swarm — 自己寫的輕量版「游標蜂群」
-   靈感來自多人協作設計工具的游標；程式為本站原創。
+   效果靈感來自多人協作設計工具的游標，以及 swarm-cursors（Swarm Rebuild，
+   DhvanilPatel/swarm-cursors）的展示；程式碼為本站從頭撰寫，沒有使用它的原始碼。
    1. 施工開場：每次進入頁面，一群游標在幾秒內分工「蓋出」第一屏
       （拖框、打字、放大、鋼筆畫線、拉參考線、拖曳複製、點擊上色）
       （可略過、可設定不再播放、捲動即結束、尊重「減少動態效果」）
@@ -119,7 +120,7 @@
      1. 施工開場
      把第一屏拆成很多「圖層」，讓一群游標分工重建：
      - 十字游標拖出灰色佔位框，再填上真的內容（圖片由上往下掃出來）
-     - I 字游標逐字打字；大標題先用小字打完，再拖曳角落放大
+     - 文字直接被建立在旁邊，再被拖回正確位置、同時拉伸；大標題先小小地出現，再拖曳角落放大
      - 鋼筆點出分隔線；從尺規拉出紅色參考線
      - 重複的元件先做一個，再拖曳複製出其他幾個，然後改字
      - 紅色按鈕先是灰的，被點一下才變紅
@@ -133,7 +134,7 @@
     return true;
   }
   function revealAll() {
-    S.touched.forEach(function (n) { n.style.visibility = ''; n.style.clipPath = ''; n.style.transform = ''; n.style.transformOrigin = ''; n.style.filter = ''; n.style.transition = ''; n.classList.remove('sw-in', 'sw-pop'); });
+    S.touched.forEach(function (n) { n.style.visibility = ''; n.style.clipPath = ''; n.style.transform = ''; n.style.transformOrigin = ''; n.style.filter = ''; n.style.transition = ''; n.style.position = ''; n.style.left = ''; n.style.top = ''; n.classList.remove('sw-in', 'sw-pop'); });
     document.querySelectorAll('[data-build]').forEach(function (n) { n.style.visibility = ''; n.style.opacity = ''; n.style.clipPath = ''; });
     S.touched = [];
     root.classList.remove('swarm-pending');
@@ -260,20 +261,20 @@
     return h;
   }
 
-  /* ---- 打字（可以先縮小打，之後再放大） ---- */
-  function typeInto(a, n, ms, done) {
-    var html = n.innerHTML, text = n.textContent.replace(/\s+/g, ' ').trim(), i = 0;
-    if (!text) { done(); return; }
-    var step = Math.max(12, Math.min(60, ms / text.length));
-    n.innerHTML = '<span class="sw-caret"></span>';
-    a.setTool('ibeam');
-    var iv = setInterval(function () {
-      i++;
-      if (i >= text.length || S.finished) { clearInterval(iv); n.innerHTML = html; done(); return; }
-      n.innerHTML = esc(text.slice(0, i)) + '<span class="sw-caret"></span>';
-      var c = n.querySelector('.sw-caret'); if (!c) return;
-      var cr = c.getBoundingClientRect(); a.x = cr.right + 1; a.y = cr.top + cr.height * .5; a.draw();
-    }, step);
+  /* ---- 文字的位移與縮放（不改內容，版面不會跳動） ---- */
+  /* 一般元素用 transform；行內元素或本來就有 transform 的元素，改用相對位移 */
+  function mover(n) {
+    var cs = getComputedStyle(n);
+    var mode = (cs.display === 'inline' || cs.transform !== 'none') ? (cs.position === 'static' ? 'rel' : 'fade') : 'tf';
+    touch(n).style.transition = 'none';
+    return {
+      mode: mode,
+      set: function (x, y, sc) {
+        if (mode === 'tf') { n.style.transformOrigin = '0 0'; n.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px) scale(' + sc.toFixed(3) + ')'; }
+        else if (mode === 'rel') { n.style.position = 'relative'; n.style.left = x.toFixed(1) + 'px'; n.style.top = y.toFixed(1) + 'px'; }
+      },
+      clear: function () { n.style.transform = ''; n.style.transformOrigin = ''; n.style.position = ''; n.style.left = ''; n.style.top = ''; n.style.transition = ''; }
+    };
   }
 
   /* ---- 每種圖層的做法 ---- */
@@ -319,38 +320,48 @@
       });
     },
     text: function (a, t, done) {
-      var r = t.r, big = r.height > 22;
-      a.setTool(big ? 'cross' : 'ibeam');
-      a.go(r.left, r.top + (big ? 0 : Math.min(r.height, 20) * .5), a.dash(r.left, r.top), null, function () {
-        var b = null;
-        var go = function () { showEl(t.el); typeInto(a, t.el, Math.min(1000, 35 * t.el.textContent.length + 200), function () { if (b) killBox(b, 80); done(); }); };
-        if (!big) { go(); return; }
-        b = makeBox(S.layer, { left: r.left, top: r.top, width: 0, height: 0 }, 'text'); S.boxes.push(b);
-        a.go(r.right, r.bottom, Math.max(200, Math.min(380, (r.width + r.height) / 3)), function (p) { var e = ease(p); sizeBox(b, r.left, r.top, r.width * e, r.height * e); }, go);
+      var r = t.r, n = t.el, mv = mover(n);
+      var sc0 = mv.mode === 'tf' ? rand(.55, .75) : 1;
+      var dx = mv.mode === 'fade' ? 0 : rand(-80, 80), dy = mv.mode === 'fade' ? 0 : rand(30, 64) * (Math.random() < .5 ? -1 : 1);
+      var sx = r.left + dx, sy = r.top + dy, w0 = r.width * sc0, h0 = r.height * sc0;
+      a.setTool('cross');
+      a.go(sx, sy, a.dash(sx, sy), null, function () {
+        var b = makeBox(S.layer, { left: sx, top: sy, width: 0, height: 0 }, 'text'); S.boxes.push(b);
+        a.go(sx + w0, sy + h0, 220, function (p) { var e = ease(p); sizeBox(b, sx, sy, w0 * e, h0 * e); }, function () {
+          /* 文字直接被建立出來 */
+          mv.set(dx, dy, sc0); showEl(n, 'sw-in');
+          if (mv.mode === 'fade') { killBox(b, 200); setTimeout(done, 200); return; }
+          /* 換成移動游標，抓住文字拖回正確位置，同時拉伸到正確大小 */
+          a.setTool('move');
+          a.go(sx + w0 * .5, sy + h0 * .5, 150, null, function () {
+            a.press();
+            a.go(r.left + r.width * .5, r.top + r.height * .5, Math.max(420, Math.min(820, Math.hypot(dx, dy) * 6)), function (p) {
+              var e = ease(p), k = 1 - e, sc = sc0 + (1 - sc0) * e;
+              mv.set(dx * k, dy * k, sc);
+              sizeBox(b, r.left + dx * k, r.top + dy * k, r.width * sc, r.height * sc);
+            }, function () { mv.clear(); killBox(b, 100); done(); });
+          });
+        });
       });
     },
-    /* 大標題：先用小字打完，再拖曳右下角放大到正確大小 */
+    /* 大標題：先小小地直接出現，再換成縮放游標拖曳右下角放大到正確大小 */
     grow: function (a, t, done, mega) {
-      var r = t.r, n = t.el, cs = getComputedStyle(n), fs = parseFloat(cs.fontSize) || 40;
+      var r = t.r, n = t.el, cs = getComputedStyle(n), fs = parseFloat(cs.fontSize) || 40, mv = mover(n);
+      if (mv.mode !== 'tf') { DO.text(a, t, done); return; }
       var s0 = mega ? .15 : Math.max(.24, Math.min(.6, 18 / fs));
       a.setTool('cross');
       a.go(r.left, r.top, a.dash(r.left, r.top), null, function () {
         var b = makeBox(S.layer, { left: r.left, top: r.top, width: 0, height: 0 }, 'text'); S.boxes.push(b);
         a.go(r.left + r.width * s0, r.top + r.height * s0, 260, function (p) { var e = ease(p); sizeBox(b, r.left, r.top, r.width * s0 * e, r.height * s0 * e); }, function () {
-          touch(n).style.transformOrigin = '0 0'; n.style.transform = 'scale(' + s0 + ')';
-          showEl(n);
-          typeInto(a, n, mega ? 520 : 420, function () {
-            if (S.finished) return done();
-            /* 換成縮放游標，抓住右下角往外拉 */
-            var cx = r.left + r.width * s0, cy = r.top + r.height * s0;
-            a.setTool('resize');
-            a.go(cx, cy, 200, null, function () {
-              a.press();
-              a.go(r.right, r.bottom, mega ? 1300 : Math.max(650, Math.min(1100, (r.width + r.height) * 1.2)), function (p) {
-                var e = ease(p), s = s0 + (1 - s0) * e;
-                n.style.transform = 'scale(' + s + ')'; sizeBox(b, r.left, r.top, r.width * s, r.height * s);
-              }, function () { n.style.transform = ''; killBox(b, 120); done(); });
-            });
+          mv.set(0, 0, s0); showEl(n, 'sw-in');
+          var cx = r.left + r.width * s0, cy = r.top + r.height * s0;
+          a.setTool('resize');
+          a.go(cx, cy, 160, null, function () {
+            a.press();
+            a.go(r.right, r.bottom, mega ? 1300 : Math.max(650, Math.min(1100, (r.width + r.height) * 1.2)), function (p) {
+              var e = ease(p), sc = s0 + (1 - s0) * e;
+              mv.set(0, 0, sc); sizeBox(b, r.left, r.top, r.width * sc, r.height * sc);
+            }, function () { mv.clear(); killBox(b, 120); done(); });
           });
         });
       });
@@ -399,16 +410,7 @@
           }, function () {
             showEl(t.el, 'sw-in');
             killBox(ghost, 60); killBox(sel, 60); killBox(meas, 300);
-            /* 放開後改字：把複製出來的文字重新打一次 */
-            var leaves = [];
-            if (hasText(t.el)) leaves.push(t.el);
-            else t.el.querySelectorAll('*').forEach(function (x) { if (hasText(x) && leaves.length < 2) leaves.push(x); });
-            var k = 0;
-            (function nextLeaf() {
-              if (k >= leaves.length || S.finished) { a.setTool('arrow'); done(); return; }
-              var lf = leaves[k++], lr = lf.getBoundingClientRect();
-              a.go(lr.left, lr.top + lr.height / 2, 180, null, function () { typeInto(a, lf, 320, nextLeaf); });
-            })();
+            a.setTool('arrow'); setTimeout(done, 120);
           });
         }, 160);
       });
