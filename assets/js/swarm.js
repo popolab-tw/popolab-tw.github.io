@@ -27,6 +27,8 @@
   ];
   var fine = window.matchMedia && matchMedia('(pointer: fine)').matches;
   var small = window.innerWidth < 820;
+  /* 常駐游標的節奏：同時做事的數量、讀字速度、休息時間、最高速度 */
+  var T = { maxBusy: 2, maxBusyMouse: 1, maxBusyPhone: 1, readSpeed: small ? 55 : 75, restMin: 1800, restMax: 4200, travelSpeed: .16, followMax: 3.5, wanderMax: 1 };
   var READ_SEL = '.hero-desc,.hero-role,.lede,.w-hook,.prose p,.prose li,.tip p,.row .rt,.tl .what,.card .hook,.step span span,.big-sub,.support p,.small,.ci .ct,.wins .wt,.quote-card blockquote,.h-zh';
   var CLICK_SEL = '.btn,.tab,.card .thumb,.hd-cta,.ci,.play-link,.chip,.wins li a,.tl summary,.link,.circle-cta,.pager a,.motion-toggle,.yt-facade,.media-link,.crumbs a';
   var INSPECT_SEL = '.card .thumb img,.hero-visual img,.h-en,.w-title,.big-stat,.quote-card,.ba,.media-frame,.tilt-card,.stat,.gallery img,.w-stat,.tip';
@@ -51,7 +53,7 @@
     var side = i % 2 ? 1 : -1;
     this.x = side > 0 ? innerWidth + rand(20, 120) : -rand(20, 120);
     this.y = rand(innerHeight * .15, innerHeight * .85);
-    this.vx = 0; this.vy = 0; this.seg = null; this.queue = []; this.task = null; this.next = 0;
+    this.vx = 0; this.vy = 0; this.seg = null; this.queue = []; this.task = null; this.next = 0; this.recent = []; this.cont = null;
     this.home = { x: rand(innerWidth * .1, innerWidth * .9), y: rand(innerHeight * .2, innerHeight * .8) };
     this.ph = rand(0, Math.PI * 2); this.w = rand(.6, 1.2); this.r = rand(46, 120);
     this.draw();
@@ -63,7 +65,7 @@
     if (!this.seg && this.queue.length) { this.seg = this.queue.shift(); this.seg.fx = this.x; this.seg.fy = this.y; this.seg.t = 0; }
     if (!this.seg) return false;
     var s = this.seg; s.t += dt;
-    var p = Math.min(1, s.t / s.dur), e = s.lin ? p : ease(p);
+    var p = Math.min(1, s.t / s.dur), e = s.lin ? p : (this.soft ? (1 - Math.cos(Math.PI * p)) / 2 : ease(p));
     this.x = s.fx + (s.x - s.fx) * e; this.y = s.fy + (s.y - s.fy) * e;
     if (s.u) s.u(p);
     if (p >= 1) { this.seg = null; if (s.d) s.d(); }
@@ -76,7 +78,8 @@
     this.vx *= .86; this.vy *= .86; this.x += this.vx; this.y += this.vy;
   };
   Agent.prototype.press = function () { var e = this.e; e.classList.add('press'); setTimeout(function () { e.classList.remove('press'); }, 170); };
-  Agent.prototype.travel = function (x, y) { return Math.max(260, Math.min(900, Math.hypot(x - this.x, y - this.y) / 1.6)); };
+  /* 走過去要花的時間：距離 ÷ 速度上限（約每秒 160px，加上緩動，最快約每秒 300px） */
+  Agent.prototype.travel = function (x, y) { return Math.max(1000, Math.hypot(x - this.x, y - this.y) / T.travelSpeed); };
 
   /* =========================================================
      1. 施工開場
@@ -254,7 +257,7 @@
       this.fx = el('div', 'sw-fx'); this.fx.setAttribute('aria-hidden', 'true'); document.body.appendChild(this.fx);
       this.agents = agents; this.leaving = leaving || [];
       var now = performance.now();
-      agents.forEach(function (a) { a.clear(); a.task = null; a.vx = a.vy = 0; a.next = now + rand(400, 2200); });
+      agents.forEach(function (a) { a.clear(); a.task = null; a.vx = a.vy = 0; a.soft = true; a.next = now + rand(1500, 4500); });
       this.on = true; this.last = 0;
       var self = this;
       this.raf = requestAnimationFrame(function t(n) { self.tick(n); if (self.on) self.raf = requestAnimationFrame(t); });
@@ -281,26 +284,17 @@
     interruptAll: function () {
       if (!this.on) return;
       var now = performance.now();
-      this.agents.forEach(function (a) { if (a.task) { a.clear(); a.task = null; a.next = now + rand(500, 1400); } });
+      this.agents.forEach(function (a) { a.cont = null; if (a.task) { a.clear(); a.task = null; a.next = now + rand(1200, 2600); } });
       this.busy = [];
       this.clearFx();
     },
     isBusy: function (e) { for (var i = 0; i < this.busy.length; i++) if (this.busy[i] === e || this.busy[i].contains(e) || e.contains(this.busy[i])) return true; return false; },
-    release: function (a, e, now) {
+    release: function (a, e) {
       var i = this.busy.indexOf(e); if (i > -1) this.busy.splice(i, 1);
-      a.task = null; a.next = (now || performance.now()) + rand(600, 2200);
+      a.task = null; a.next = performance.now() + rand(T.restMin, T.restMax);
+      a.recent.unshift(e); if (a.recent.length > 4) a.recent.pop();
     },
     inView: function (r, pad) { pad = pad || 0; return r.width > 8 && r.height > 6 && r.top > 72 + pad && r.bottom < innerHeight - 24 - pad && r.left > -2 && r.right < innerWidth + 2; },
-    candidates: function (sel) {
-      var self = this, out = [];
-      document.querySelectorAll(sel).forEach(function (e) {
-        if (e.closest('.sw-hud,.site-footer .ft-mega') || self.isBusy(e)) return;
-        var r = e.getBoundingClientRect();
-        if (r.bottom < 72 || r.top > innerHeight - 24) return;
-        out.push(e);
-      });
-      return shuffle(out);
-    },
     lines: function (e) {
       var rg = document.createRange(); rg.selectNodeContents(e);
       var rs = Array.prototype.slice.call(rg.getClientRects()), lines = [];
@@ -313,120 +307,139 @@
         lines.push({ left: r.left, right: r.right, top: r.top, bottom: r.bottom });
       });
       var self = this;
-      return lines.filter(function (L) { return L.right - L.left > 60 && self.inView({ width: L.right - L.left, height: L.bottom - L.top, top: L.top, bottom: L.bottom, left: L.left, right: L.right }); });
+      return lines.filter(function (L) { return L.right - L.left > 60 && self.inView({ width: L.right - L.left, height: L.bottom - L.top, top: L.top, bottom: L.bottom, left: L.left, right: L.right }); })
+                  .sort(function (p, q) { return p.top - q.top; });
     },
-    /* ---- 任務：讀一行字 ---- */
-    taskRead: function (a, now) {
-      var els = this.candidates(READ_SEL);
-      for (var k = 0; k < els.length && k < 14; k++) {
-        var e = els[k], ls = this.lines(e);
-        if (!ls.length) continue;
-        var L = ls[Math.floor(Math.random() * ls.length)], self = this, fx = this.fx;
-        var h = L.bottom - L.top, y = L.top + h * .5;
-        this.busy.push(e); a.task = 'read';
-        a.go(L.left - 3, y, a.travel(L.left, y), null, function () {
-          var hl = el('div', 'sw-hl');
-          hl.style.cssText = 'left:' + L.left + 'px;top:' + (L.top + 1) + 'px;height:' + (h - 2) + 'px;width:0;background:' + rgba(a.c, .24) + ';box-shadow:inset -2px 0 0 ' + a.c;
-          fx.appendChild(hl);
-          var w = L.right - L.left;
-          a.go(L.right, y, Math.max(700, Math.min(3600, w / (small ? 150 : 230) * 1000)), function (p) { hl.style.width = (w * p) + 'px'; }, function () {
-            setTimeout(function () { hl.classList.add('gone'); setTimeout(function () { hl.remove(); }, 420); }, 380);
-            a.go(a.x + rand(10, 40), a.y + rand(14, 40), 300, null, function () { self.release(a, e); });
-          }, true);
+    /* 收集三種任務的候選目標，依「離這個游標多近」排序 */
+    options: function (a) {
+      var self = this, out = [];
+      [['read', READ_SEL], ['click', CLICK_SEL], ['inspect', INSPECT_SEL]].forEach(function (pair) {
+        document.querySelectorAll(pair[1]).forEach(function (e) {
+          if (e.closest('.sw-hud') || self.isBusy(e) || a.recent.indexOf(e) > -1) return;
+          var r = e.getBoundingClientRect();
+          if (r.bottom < 80 || r.top > innerHeight - 30 || r.width < 8) return;
+          var nx = Math.max(r.left, Math.min(a.x, r.right)), ny = Math.max(r.top, Math.min(a.y, r.bottom));
+          out.push({ type: pair[0], e: e, d: Math.hypot(nx - a.x, ny - a.y) * rand(.85, 1.15) });
         });
-        return true;
-      }
-      return false;
+      });
+      return out.sort(function (p, q) { return p.d - q.d; });
     },
-    /* ---- 任務：點一下按鈕或卡片 ---- */
-    taskClick: function (a) {
-      var els = this.candidates(CLICK_SEL);
-      for (var k = 0; k < els.length; k++) {
-        var e = els[k], r = e.getBoundingClientRect();
-        if (!this.inView(r)) continue;
-        var x = r.left + r.width * rand(.3, .7), y = r.top + r.height * rand(.35, .65), self = this, fx = this.fx;
-        var host = e.closest('.card') || e;
-        this.busy.push(e); a.task = 'click';
-        a.go(x, y, a.travel(x, y), null, function () {
-          var box = makeBox(fx, r, 'sel');
-          box.style.borderColor = a.c; box.querySelector('em').style.background = a.c;
-          if (a.c === '#ffffff' || a.c === '#f0a37c') box.querySelector('em').style.color = '#111';
-          var label = (e.getAttribute('aria-label') || e.textContent || '').replace(/\s+/g, ' ').trim();
-          box.querySelector('em').textContent = label ? (label.length > 12 ? label.slice(0, 12) + '…' : label) : 'Click';
-          host.classList.add('sw-hover');
-          setTimeout(function () {
-            if (!self.on) return;
-            a.press();
-            var rp = el('div', 'sw-ripple'); rp.style.left = x + 'px'; rp.style.top = y + 'px'; rp.style.borderColor = a.c; fx.appendChild(rp);
-            setTimeout(function () { rp.remove(); }, 700);
-          }, 260);
-          setTimeout(function () {
-            host.classList.remove('sw-hover'); box.classList.add('gone'); setTimeout(function () { box.remove(); }, 420);
-            a.go(a.x + rand(-40, 40), a.y + rand(20, 60), 320, null, function () { self.release(a, e); });
-          }, 1100);
+    /* ---- 讀一行字：慢慢掃過去，留下反白 ---- */
+    doRead: function (a, e, L) {
+      var self = this, fx = this.fx, h = L.bottom - L.top, y = L.top + h * .5;
+      this.busy.push(e); a.task = 'read';
+      a.go(L.left - 3, y, a.travel(L.left - 3, y), null, function () {
+        var hl = el('div', 'sw-hl');
+        hl.style.cssText = 'left:' + L.left + 'px;top:' + (L.top + 1) + 'px;height:' + (h - 2) + 'px;width:0;background:' + rgba(a.c, .22) + ';box-shadow:inset -2px 0 0 ' + a.c;
+        fx.appendChild(hl);
+        var w = L.right - L.left;
+        a.go(L.right, y, Math.max(1800, w / T.readSpeed * 1000), function (p) { hl.style.width = (w * p) + 'px'; }, function () {
+          setTimeout(function () { hl.classList.add('gone'); setTimeout(function () { hl.remove(); }, 900); }, 1100);
+          a.cont = { e: e, top: L.top };
+          a.go(a.x + rand(6, 20), a.y + rand(6, 16), 700, null, function () { self.release(a, e); });
+        }, true);
+      });
+    },
+    /* ---- 點一下按鈕或卡片 ---- */
+    doClick: function (a, e) {
+      var r = e.getBoundingClientRect();
+      if (!this.inView(r)) return false;
+      var x = r.left + r.width * rand(.3, .7), y = r.top + r.height * rand(.35, .65), self = this, fx = this.fx;
+      var host = e.closest('.card') || e;
+      this.busy.push(e); a.task = 'click';
+      a.go(x, y, a.travel(x, y), null, function () {
+        var box = makeBox(fx, r, 'sel'), lab = box.querySelector('em');
+        box.style.borderColor = a.c; lab.style.background = a.c;
+        if (a.c === '#ffffff' || a.c === '#f0a37c') lab.style.color = '#111';
+        var label = (e.getAttribute('aria-label') || e.textContent || '').replace(/\s+/g, ' ').trim();
+        lab.textContent = label ? (label.length > 12 ? label.slice(0, 12) + '…' : label) : 'Click';
+        host.classList.add('sw-hover');
+        setTimeout(function () {
+          if (!self.on) return;
+          a.press();
+          var rp = el('div', 'sw-ripple'); rp.style.left = x + 'px'; rp.style.top = y + 'px'; rp.style.borderColor = a.c; fx.appendChild(rp);
+          setTimeout(function () { rp.remove(); }, 1500);
+        }, 800);
+        setTimeout(function () {
+          host.classList.remove('sw-hover'); box.classList.add('gone'); setTimeout(function () { box.remove(); }, 900);
+          a.go(a.x + rand(-40, 40), a.y + rand(20, 50), 900, null, function () { self.release(a, e); });
+        }, 3200);
+      });
+      return true;
+    },
+    /* ---- 框選一張圖或標題，標出尺寸 ---- */
+    doInspect: function (a, e) {
+      var r = e.getBoundingClientRect();
+      if (!this.inView(r, 4) || r.width > innerWidth * .9) return false;
+      var self = this, fx = this.fx;
+      this.busy.push(e); a.task = 'inspect';
+      a.go(r.left, r.top, a.travel(r.left, r.top), null, function () {
+        var b = makeBox(fx, { left: r.left, top: r.top, width: 0, height: 0 }), lab = b.querySelector('em');
+        b.style.borderColor = a.c; lab.style.background = a.c;
+        if (a.c === '#ffffff' || a.c === '#f0a37c') lab.style.color = '#111';
+        a.go(r.right, r.bottom, Math.max(1200, Math.hypot(r.width, r.height) / T.travelSpeed), function (p) {
+          var q = ease(p); b.style.width = (r.width * q) + 'px'; b.style.height = (r.height * q) + 'px';
+          lab.textContent = Math.round(r.width * q) + ' × ' + Math.round(r.height * q);
+        }, function () {
+          setTimeout(function () { b.classList.add('gone'); setTimeout(function () { b.remove(); }, 900); self.release(a, e); }, 2400);
         });
-        return true;
-      }
-      return false;
+      });
+      return true;
     },
-    /* ---- 任務：框選一張圖或標題，標出尺寸 ---- */
-    taskInspect: function (a) {
-      var els = this.candidates(INSPECT_SEL);
-      for (var k = 0; k < els.length; k++) {
-        var e = els[k], r = e.getBoundingClientRect();
-        if (!this.inView(r, 4) || r.width > innerWidth * .9) continue;
-        var self = this, fx = this.fx;
-        this.busy.push(e); a.task = 'inspect';
-        a.go(r.left, r.top, a.travel(r.left, r.top), null, function () {
-          var b = makeBox(fx, { left: r.left, top: r.top, width: 0, height: 0 }), lab = b.querySelector('em');
-          b.style.borderColor = a.c; lab.style.background = a.c;
-          if (a.c === '#ffffff' || a.c === '#f0a37c') lab.style.color = '#111';
-          a.go(r.right, r.bottom, Math.max(380, Math.min(800, (r.width + r.height) / 2)), function (p) {
-            var q = ease(p); b.style.width = (r.width * q) + 'px'; b.style.height = (r.height * q) + 'px';
-            lab.textContent = Math.round(r.width * q) + ' × ' + Math.round(r.height * q);
-          }, function () {
-            setTimeout(function () { b.classList.add('gone'); setTimeout(function () { b.remove(); }, 420); self.release(a, e); }, 900);
-          });
-        });
-        return true;
+    startTask: function (a) {
+      /* 1. 剛讀完的段落還有下一行：優先接著讀 */
+      var c = a.cont; a.cont = null;
+      if (c && Math.random() < .75 && document.contains(c.e) && !this.isBusy(c.e)) {
+        var ls = this.lines(c.e);
+        for (var i = 0; i < ls.length; i++) if (ls[i].top > c.top + 4) { this.doRead(a, c.e, ls[i]); return true; }
       }
-      return false;
-    },
-    startTask: function (a, now) {
-      var roll = Math.random(), order = roll < .5 ? ['taskRead', 'taskClick', 'taskInspect'] : roll < .85 ? ['taskClick', 'taskRead', 'taskInspect'] : ['taskInspect', 'taskRead', 'taskClick'];
-      for (var i = 0; i < order.length; i++) if (this[order[i]](a, now)) return true;
+      /* 2. 否則挑附近的東西：越近越優先，保留一點隨機 */
+      var opts = this.options(a);
+      for (var k = 0; k < opts.length && k < 10; k++) {
+        if (k < opts.length - 1 && Math.random() < .3) continue;
+        var o = opts[k];
+        if (o.type === 'read') {
+          var lines = this.lines(o.e);
+          if (!lines.length) continue;
+          lines.sort(function (p, q) { return Math.abs((p.top + p.bottom) / 2 - a.y) - Math.abs((q.top + q.bottom) / 2 - a.y); });
+          this.doRead(a, o.e, lines[0]); return true;
+        }
+        if (o.type === 'click' && this.doClick(a, o.e)) return true;
+        if (o.type === 'inspect' && this.doInspect(a, o.e)) return true;
+      }
       return false;
     },
     tick: function (now) {
       var dt = Math.min(40, now - (this.last || now)); this.last = now;
       this.leaving.forEach(function (a) { a.stepSeg(dt); a.draw(); });
       var mouseActive = fine && this.mx >= 0 && now - this.lastMove < 2800;
-      var maxTasks = mouseActive ? 2 : (small ? 2 : 6), running = 0, n = this.agents.length, i, a;
+      var maxTasks = mouseActive ? T.maxBusyMouse : (small ? T.maxBusyPhone : T.maxBusy), running = 0, n = this.agents.length, i, a;
       for (i = 0; i < n; i++) if (this.agents[i].task) running++;
       for (i = 0; i < n; i++) {
         a = this.agents[i];
         if (a.task) { a.stepSeg(dt); a.draw(); continue; }
         if (running < maxTasks && now >= a.next) {
-          if (this.startTask(a, now)) { running++; a.stepSeg(dt); a.draw(); continue; }
-          a.next = now + rand(700, 1500);
+          if (this.startTask(a)) { running++; a.stepSeg(dt); a.draw(); continue; }
+          a.next = now + rand(1200, 2400);
         }
         var tx, ty;
         if (mouseActive) {
-          var ang = a.ph + now / 1000 * .55 * a.w;
+          var ang = a.ph + now / 1000 * .35 * a.w;
           tx = this.mx + Math.cos(ang) * a.r + 10; ty = this.my + Math.sin(ang) * a.r * .8 + 14;
         } else {
-          tx = innerWidth * (.5 + .38 * Math.sin(now / 5200 + a.ph)) + Math.cos(now / 1300 * a.w + a.ph) * 40;
-          ty = innerHeight * (.5 + .32 * Math.sin(now / 3900 * a.w + a.ph * 1.7));
+          tx = innerWidth * (.5 + .38 * Math.sin(now / 9000 + a.ph)) + Math.cos(now / 2600 * a.w + a.ph) * 40;
+          ty = innerHeight * (.5 + .32 * Math.sin(now / 7000 * a.w + a.ph * 1.7));
         }
-        var k = mouseActive ? .0016 : .00055;
+        var k = mouseActive ? .0009 : .00035;
         a.vx += (tx - a.x) * k * dt; a.vy += (ty - a.y) * k * dt;
         for (var j = 0; j < n; j++) {
           if (j === i) continue;
           var b = this.agents[j], dx = a.x - b.x, dy = a.y - b.y, d2 = dx * dx + dy * dy;
-          if (d2 < 900 && d2 > .01) { var f = (900 - d2) / 900 * .06 * dt, d = Math.sqrt(d2); a.vx += dx / d * f; a.vy += dy / d * f; }
+          if (d2 < 900 && d2 > .01) { var f = (900 - d2) / 900 * .04 * dt, d = Math.sqrt(d2); a.vx += dx / d * f; a.vy += dy / d * f; }
         }
         a.vx *= .9; a.vy *= .9;
-        var sp = Math.hypot(a.vx, a.vy), mxs = mouseActive ? 9 : 2.2;
+        /* 最高移動速度（每格像素）：跟隨約每秒 210px，閒晃約每秒 60px */
+        var sp = Math.hypot(a.vx, a.vy), mxs = mouseActive ? T.followMax : T.wanderMax;
         if (sp > mxs) { a.vx *= mxs / sp; a.vy *= mxs / sp; }
         a.x += a.vx; a.y += a.vy; a.draw();
       }

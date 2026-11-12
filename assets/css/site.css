@@ -467,6 +467,7 @@ ul,ol{margin:0;padding:0;list-style:none}
 .sw-guide.on{opacity:1}
 .sw-guide.red{background:rgba(255,30,45,.75)}
 .sw-box{position:absolute;border:1px solid var(--blue);background:rgba(47,140,255,.05);opacity:1;transition:opacity .45s}
+.sw-fx .sw-box{transition:opacity .9s}
 .sw-box.wire{background:rgba(255,255,255,.06);
   background-image:linear-gradient(to top right,transparent calc(50% - .5px),rgba(255,255,255,.12) 50%,transparent calc(50% + .5px)),linear-gradient(to top left,transparent calc(50% - .5px),rgba(255,255,255,.12) 50%,transparent calc(50% + .5px))}
 .sw-box.gone{opacity:0}
@@ -490,13 +491,13 @@ ul,ol{margin:0;padding:0;list-style:none}
 .sw-live{position:fixed;inset:0;z-index:75;pointer-events:none;overflow:hidden}
 .sw-live .sw-agent svg{width:16px;height:18px}
 .sw-live .sw-agent{opacity:.95}
-.sw-agent svg{transition:transform .12s ease;transform-origin:3px 2px}
+.sw-agent svg{transition:transform .22s ease;transform-origin:3px 2px}
 .sw-agent.press svg{transform:scale(.78)}
 .sw-fx{position:fixed;inset:0;z-index:74;pointer-events:none;overflow:hidden}
-.sw-hl{position:absolute;border-radius:2px;transition:opacity .4s}
+.sw-hl{position:absolute;border-radius:2px;transition:opacity .9s}
 .sw-hl.gone,.sw-ripple.gone{opacity:0}
 .sw-box.sel{background:transparent;border-width:1.5px}
-.sw-ripple{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;border:2px solid #fff;border-radius:50%;animation:sw-rip .65s ease-out forwards}
+.sw-ripple{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;border:2px solid #fff;border-radius:50%;animation:sw-rip 1.4s ease-out forwards}
 @keyframes sw-rip{from{transform:scale(.4);opacity:1}to{transform:scale(4.2);opacity:0}}
 .sw-caret{display:inline-block;width:2px;height:.9em;background:var(--blue);vertical-align:-.08em;margin-left:2px}
 .sw-hud button.never{background:transparent;color:#bdbdbd;padding-left:4px}
