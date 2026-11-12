@@ -22,6 +22,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Caveat:wght@600&family=Inter:wght@500;700;800&family=Noto+Sans+TC:wght@500;700;900&display=swap">
 <link rel="stylesheet" href="/assets/css/site.css">
+<script>
+(function(){try{var d=document.documentElement,r=matchMedia('(prefers-reduced-motion: reduce)').matches,m=localStorage.getItem('popolab-motion'),i=localStorage.getItem('popolab-intro');if(!r&&m!=='off'&&i!=='off'&&!location.hash){d.classList.add('swarm-pending');setTimeout(function(){if(!window.POPOLAB_SWARM_STARTED)d.classList.remove('swarm-pending')},3500)}}catch(e){}})();
+</script>
 <script src="/assets/js/site.js" defer></script>
 <script src="/assets/js/swarm.js" defer></script>
 </head>
@@ -29,11 +32,11 @@
 <div class="grain" aria-hidden="true"></div>
 <header class="site-header">
   <div class="bar">
-    <a class="logo" href="/" aria-label="POPOLAB 首頁">POPOLAB<span class="dot"></span></a>
-    <nav class="nav" aria-label="主選單">
+    <a class="logo" href="/" aria-label="POPOLAB 首頁" data-build>POPOLAB<span class="dot"></span></a>
+    <nav class="nav" aria-label="主選單" data-build>
       <a href="/#work">作品</a><a href="/#numbers">數據</a><a href="/#craft">過程</a><a href="/#journey">歷程</a><a href="/#contact">合作</a>
     </nav>
-    <div class="hd-right">
+    <div class="hd-right" data-build>
       <button class="motion-toggle" type="button" aria-pressed="true" title="開關動態效果"><span class="ic">▶</span><span class="tx">動態</span><span class="st">開</span></button>
       <a class="hd-cta" href="https://www.threads.com/@popolab_tw" target="_blank" rel="noopener"><span class="tx">追蹤</span> ↗</a>
     </div>
@@ -44,16 +47,16 @@
   <div class="guides" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
 
   <section class="w-hero">
-    <div class="crumbs label"><a href="/#work">作品</a><span>/</span><b>04</b><span>/ 05</span></div>
-    <h1 class="w-title">Feed<span class="r">.</span></h1>
-    <p class="w-sub">餵 FEED</p>
+    <div class="crumbs label" data-build><a href="/#work">作品</a><span>/</span><b>04</b><span>/ 05</span></div>
+    <h1 class="w-title" data-build="mega">Feed<span class="r">.</span></h1>
+    <p class="w-sub" data-build="type">餵 FEED</p>
     <div class="w-intro">
-      <p class="w-hook">這次換你當演算法：讓所有人滑不停。</p>
-      <dl class="w-meta"><div><dt>類型</dt><dd>Roguelike 經營模擬</dd></div><div><dt>時間</dt><dd>2026.10</dd></div><div><dt>平台</dt><dd>手機瀏覽器直接玩</dd></div><div><dt>結局</dt><dd>22 種</dd></div></dl>
+      <p class="w-hook" data-build>這次換你當演算法：讓所有人滑不停。</p>
+      <dl class="w-meta" data-build><div><dt>類型</dt><dd>Roguelike 經營模擬</dd></div><div><dt>時間</dt><dd>2026.10</dd></div><div><dt>平台</dt><dd>手機瀏覽器直接玩</dd></div><div><dt>結局</dt><dd>22 種</dd></div></dl>
     </div>
   </section>
 
-  <section class="w-media" aria-label="作品本體">
+  <section class="w-media" aria-label="作品本體" data-build>
     <div class="media-frame" id="play"><a class="media-link" href="https://claude.ai/artifact/ChqoLQivxsNF9jrMtzgfkB" target="_blank" rel="noopener" aria-label="點一下開始玩（另開新頁）">
       <img src="/assets/works/feed/cover.webp" alt="餵 FEED 畫面" width="1600" height="1000">
       <span class="big-play" aria-hidden="true"><svg viewBox="0 0 10 12"><path d="M0 0l10 6-10 6z"/></svg></span>
@@ -115,7 +118,7 @@
     <p class="ft-mega" aria-hidden="true">POPOLAB</p>
     <div>
       <div class="ft-links">
-        <a href="/">首頁</a><a href="/#work">所有作品</a><a href="https://www.threads.com/@popolab_tw" target="_blank" rel="noopener">Threads</a><a href="https://portaly.cc/popolab_tw/support?utm_source=popolab-site&amp;utm_medium=footer" target="_blank" rel="noopener">贊助</a><a href="https://github.com/popolab-tw" target="_blank" rel="noopener">GitHub</a>
+        <a href="/">首頁</a><a href="/#work">所有作品</a><a href="https://www.threads.com/@popolab_tw" target="_blank" rel="noopener">Threads</a><a href="https://portaly.cc/popolab_tw/support?utm_source=popolab-site&amp;utm_medium=footer" target="_blank" rel="noopener">贊助</a><a href="https://github.com/popolab-tw" target="_blank" rel="noopener">GitHub</a><button type="button" data-replay>重播開場</button>
       </div>
       <p class="ft-copy" style="margin-top:12px">本站沒有追蹤或分析程式；影片在你按下播放後才會連到 YouTube。</p>
     </div>

@@ -22,6 +22,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Caveat:wght@600&family=Inter:wght@500;700;800&family=Noto+Sans+TC:wght@500;700;900&display=swap">
 <link rel="stylesheet" href="/assets/css/site.css">
+<script>
+(function(){try{var d=document.documentElement,r=matchMedia('(prefers-reduced-motion: reduce)').matches,m=localStorage.getItem('popolab-motion'),i=localStorage.getItem('popolab-intro');if(!r&&m!=='off'&&i!=='off'&&!location.hash){d.classList.add('swarm-pending');setTimeout(function(){if(!window.POPOLAB_SWARM_STARTED)d.classList.remove('swarm-pending')},3500)}}catch(e){}})();
+</script>
 <script src="/assets/js/site.js" defer></script>
 <script src="/assets/js/swarm.js" defer></script>
 </head>
@@ -29,11 +32,11 @@
 <div class="grain" aria-hidden="true"></div>
 <header class="site-header">
   <div class="bar">
-    <a class="logo" href="/" aria-label="POPOLAB 首頁">POPOLAB<span class="dot"></span></a>
-    <nav class="nav" aria-label="主選單">
+    <a class="logo" href="/" aria-label="POPOLAB 首頁" data-build>POPOLAB<span class="dot"></span></a>
+    <nav class="nav" aria-label="主選單" data-build>
       <a href="/#work">作品</a><a href="/#numbers">數據</a><a href="/#craft">過程</a><a href="/#journey">歷程</a><a href="/#contact">合作</a>
     </nav>
-    <div class="hd-right">
+    <div class="hd-right" data-build>
       <button class="motion-toggle" type="button" aria-pressed="true" title="開關動態效果"><span class="ic">▶</span><span class="tx">動態</span><span class="st">開</span></button>
       <a class="hd-cta" href="https://www.threads.com/@popolab_tw" target="_blank" rel="noopener"><span class="tx">追蹤</span> ↗</a>
     </div>
@@ -44,16 +47,16 @@
   <div class="guides" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
 
   <section class="w-hero">
-    <div class="crumbs label"><a href="/#work">作品</a><span>/</span><b>01</b><span>/ 05</span></div>
-    <h1 class="w-title">NEXT GEN<br><span class="r">&amp; MV.</span></h1>
-    <p class="w-sub">生育門檻可視化網站 ＆ MV</p>
+    <div class="crumbs label" data-build><a href="/#work">作品</a><span>/</span><b>01</b><span>/ 05</span></div>
+    <h1 class="w-title" data-build="mega">NEXT GEN<br><span class="r">&amp; MV.</span></h1>
+    <p class="w-sub" data-build="type">生育門檻可視化網站 ＆ MV</p>
     <div class="w-intro">
-      <p class="w-hook">把四千多份匿名分享，變成一張 3D 台灣地圖和一支 MV。</p>
-      <dl class="w-meta"><div><dt>類型</dt><dd>資料視覺化網站・MV</dd></div><div><dt>時間</dt><dd>2026.11</dd></div><div><dt>MV 長度</dt><dd>3 分 38 秒</dd></div><div><dt>分工</dt><dd>海島上的波波 × Claude</dd></div></dl>
+      <p class="w-hook" data-build>把四千多份匿名分享，變成一張 3D 台灣地圖和一支 MV。</p>
+      <dl class="w-meta" data-build><div><dt>類型</dt><dd>資料視覺化網站・MV</dd></div><div><dt>時間</dt><dd>2026.11</dd></div><div><dt>MV 長度</dt><dd>3 分 38 秒</dd></div><div><dt>分工</dt><dd>海島上的波波 × Claude</dd></div></dl>
     </div>
   </section>
 
-  <section class="w-media" aria-label="作品本體">
+  <section class="w-media" aria-label="作品本體" data-build>
     <div class="media-frame" id="watch">
       <button class="yt-facade" type="button" data-yt="GtedN8SQCFM" data-title="NEXT GEN MV" aria-label="播放 NEXT GEN MV">
         <img src="/assets/works/next-gen/mv-poster-kv.webp" alt="" width="1600" height="900">
@@ -138,7 +141,7 @@
     <p class="ft-mega" aria-hidden="true">POPOLAB</p>
     <div>
       <div class="ft-links">
-        <a href="/">首頁</a><a href="/#work">所有作品</a><a href="https://www.threads.com/@popolab_tw" target="_blank" rel="noopener">Threads</a><a href="https://portaly.cc/popolab_tw/support?utm_source=popolab-site&amp;utm_medium=footer" target="_blank" rel="noopener">贊助</a><a href="https://github.com/popolab-tw" target="_blank" rel="noopener">GitHub</a>
+        <a href="/">首頁</a><a href="/#work">所有作品</a><a href="https://www.threads.com/@popolab_tw" target="_blank" rel="noopener">Threads</a><a href="https://portaly.cc/popolab_tw/support?utm_source=popolab-site&amp;utm_medium=footer" target="_blank" rel="noopener">贊助</a><a href="https://github.com/popolab-tw" target="_blank" rel="noopener">GitHub</a><button type="button" data-replay>重播開場</button>
       </div>
       <p class="ft-copy" style="margin-top:12px">本站沒有追蹤或分析程式；影片在你按下播放後才會連到 YouTube。</p>
     </div>

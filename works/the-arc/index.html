@@ -22,6 +22,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Caveat:wght@600&family=Inter:wght@500;700;800&family=Noto+Sans+TC:wght@500;700;900&display=swap">
 <link rel="stylesheet" href="/assets/css/site.css">
+<script>
+(function(){try{var d=document.documentElement,r=matchMedia('(prefers-reduced-motion: reduce)').matches,m=localStorage.getItem('popolab-motion'),i=localStorage.getItem('popolab-intro');if(!r&&m!=='off'&&i!=='off'&&!location.hash){d.classList.add('swarm-pending');setTimeout(function(){if(!window.POPOLAB_SWARM_STARTED)d.classList.remove('swarm-pending')},3500)}}catch(e){}})();
+</script>
 <script src="/assets/js/site.js" defer></script>
 <script src="/assets/js/swarm.js" defer></script>
 </head>
@@ -29,11 +32,11 @@
 <div class="grain" aria-hidden="true"></div>
 <header class="site-header">
   <div class="bar">
-    <a class="logo" href="/" aria-label="POPOLAB 首頁">POPOLAB<span class="dot"></span></a>
-    <nav class="nav" aria-label="主選單">
+    <a class="logo" href="/" aria-label="POPOLAB 首頁" data-build>POPOLAB<span class="dot"></span></a>
+    <nav class="nav" aria-label="主選單" data-build>
       <a href="/#work">作品</a><a href="/#numbers">數據</a><a href="/#craft">過程</a><a href="/#journey">歷程</a><a href="/#contact">合作</a>
     </nav>
-    <div class="hd-right">
+    <div class="hd-right" data-build>
       <button class="motion-toggle" type="button" aria-pressed="true" title="開關動態效果"><span class="ic">▶</span><span class="tx">動態</span><span class="st">開</span></button>
       <a class="hd-cta" href="https://www.threads.com/@popolab_tw" target="_blank" rel="noopener"><span class="tx">追蹤</span> ↗</a>
     </div>
@@ -44,16 +47,16 @@
   <div class="guides" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
 
   <section class="w-hero">
-    <div class="crumbs label"><a href="/#work">作品</a><span>/</span><b>03</b><span>/ 05</span></div>
-    <h1 class="w-title">The<br><span class="r">arc.</span></h1>
-    <p class="w-sub">人類武器演進動態影片</p>
+    <div class="crumbs label" data-build><a href="/#work">作品</a><span>/</span><b>03</b><span>/ 05</span></div>
+    <h1 class="w-title" data-build="mega">The<br><span class="r">arc.</span></h1>
+    <p class="w-sub" data-build="type">人類武器演進動態影片</p>
     <div class="w-intro">
-      <p class="w-hook">68 秒，從第一塊石頭到最後一顆核彈。</p>
-      <dl class="w-meta"><div><dt>類型</dt><dd>動態影片</dd></div><div><dt>發布</dt><dd>2026.09</dd></div><div><dt>規格</dt><dd>68 秒・1080p60</dd></div><div><dt>授權</dt><dd>程式碼 MIT・影片與配樂 CC BY-NC 4.0</dd></div></dl>
+      <p class="w-hook" data-build>68 秒，從第一塊石頭到最後一顆核彈。</p>
+      <dl class="w-meta" data-build><div><dt>類型</dt><dd>動態影片</dd></div><div><dt>發布</dt><dd>2026.09</dd></div><div><dt>規格</dt><dd>68 秒・1080p60</dd></div><div><dt>授權</dt><dd>程式碼 MIT・影片與配樂 CC BY-NC 4.0</dd></div></dl>
     </div>
   </section>
 
-  <section class="w-media" aria-label="作品本體">
+  <section class="w-media" aria-label="作品本體" data-build>
     <div class="media-frame" id="watch"><a class="media-link" href="https://github.com/jasontzeng123/the-arc/releases/tag/v1.0" target="_blank" rel="noopener" aria-label="到 GitHub 觀看影片（另開新頁）">
       <img src="/assets/works/the-arc/cover.webp" alt="THE ARC 標題卡" width="1600" height="1000"><span class="big-play" aria-hidden="true"><svg viewBox="0 0 10 12"><path d="M0 0l10 6-10 6z"/></svg></span><span class="media-cap">影片在 GitHub，點一下前往 ↗</span></a></div>
     <p class="small" style="margin-top:10px">GitHub 上有 1080p60 高畫質版可以直接看或下載。</p>
@@ -116,7 +119,7 @@
     <p class="ft-mega" aria-hidden="true">POPOLAB</p>
     <div>
       <div class="ft-links">
-        <a href="/">首頁</a><a href="/#work">所有作品</a><a href="https://www.threads.com/@popolab_tw" target="_blank" rel="noopener">Threads</a><a href="https://portaly.cc/popolab_tw/support?utm_source=popolab-site&amp;utm_medium=footer" target="_blank" rel="noopener">贊助</a><a href="https://github.com/popolab-tw" target="_blank" rel="noopener">GitHub</a>
+        <a href="/">首頁</a><a href="/#work">所有作品</a><a href="https://www.threads.com/@popolab_tw" target="_blank" rel="noopener">Threads</a><a href="https://portaly.cc/popolab_tw/support?utm_source=popolab-site&amp;utm_medium=footer" target="_blank" rel="noopener">贊助</a><a href="https://github.com/popolab-tw" target="_blank" rel="noopener">GitHub</a><button type="button" data-replay>重播開場</button>
       </div>
       <p class="ft-copy" style="margin-top:12px">本站沒有追蹤或分析程式；影片在你按下播放後才會連到 YouTube。</p>
     </div>

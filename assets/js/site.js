@@ -137,16 +137,12 @@
   /* ---- 年份 ---- */
   document.querySelectorAll('[data-year]').forEach(function (el) { el.textContent = new Date().getFullYear(); });
 
-  /* ---- 重播開場 ---- */
+  /* ---- 重播開場（任何頁面都可以） ---- */
   document.querySelectorAll('[data-replay]').forEach(function (b) {
     b.addEventListener('click', function () {
-      store.set('popolab-built', '');
-      if (location.pathname === '/' || /index\.html$/.test(location.pathname)) {
-        window.scrollTo(0, 0);
-        if (window.POPOLAB_SWARM) window.POPOLAB_SWARM.replay();
-      } else {
-        location.href = '/';
-      }
+      store.set('popolab-intro', 'on');
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      if (window.POPOLAB_SWARM) setTimeout(function () { window.POPOLAB_SWARM.replay(); }, 60);
     });
   });
 })();
