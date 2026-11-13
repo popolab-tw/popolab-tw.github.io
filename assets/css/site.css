@@ -328,6 +328,11 @@ ul,ol{margin:0;padding:0;list-style:none}
 .yt-facade:hover .big-play,.media-link:hover .big-play{transform:scale(1.07)}
 .media-cap{position:absolute;left:16px;bottom:14px;font:800 10.5px var(--ui);letter-spacing:.14em;text-transform:uppercase;background:rgba(0,0,0,.8);padding:6px 9px}
 .media-link{display:block;position:relative;height:100%}
+.yt-langs{display:inline-flex;margin-top:12px;border:1px solid var(--line-strong);border-radius:2px;overflow:hidden}
+.yt-lang{padding:9px 16px;font:700 13px var(--zh);color:var(--mute);transition:background .2s,color .2s}
+.yt-lang+.yt-lang{border-left:1px solid var(--line-strong)}
+.yt-lang:hover{color:var(--ink)}
+.yt-lang[aria-pressed="true"]{background:var(--red);color:#fff}
 .w-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px}
 .w-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-top:clamp(44px,5vw,80px);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .w-stat{padding:22px 0 20px;border-right:1px solid var(--line);padding-left:20px}

@@ -119,6 +119,27 @@
     });
   });
 
+  /* ---- MV 語言切換（中文版／English） ---- */
+  document.querySelectorAll('.yt-lang').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var wrap = b.closest('.w-media') || document;
+      var frame = wrap.querySelector('.media-frame');
+      wrap.querySelectorAll('.yt-lang').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      var id = b.getAttribute('data-yt-id');
+      var facade = frame && frame.querySelector('[data-yt]');
+      if (facade) {
+        facade.setAttribute('data-yt', id);
+        facade.setAttribute('data-title', b.getAttribute('data-title'));
+        facade.setAttribute('aria-label', '播放 ' + b.getAttribute('data-title'));
+        var img = facade.querySelector('img'); if (img) img.src = b.getAttribute('data-poster');
+        var cap = facade.querySelector('.media-cap'); if (cap) cap.textContent = b.getAttribute('data-cap');
+      } else if (frame) {
+        var f = frame.querySelector('iframe');
+        if (f) { f.src = 'https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0&playsinline=1'; f.title = b.getAttribute('data-title'); }
+      }
+    });
+  });
+
   /* ---- 信箱：點了才組出來，降低被爬蟲收集 ---- */
   document.querySelectorAll('[data-mail]').forEach(function (el) {
     el.addEventListener('click', function (e) {
