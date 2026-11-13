@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Caveat:wght@600&family=Inter:wght@500;700;800&family=Noto+Sans+TC:wght@500;700;900&display=swap">
-<link rel="stylesheet" href="/assets/css/site.css?v=797be077">
+<link rel="stylesheet" href="/assets/css/site.css?v=cbe4bda6">
 <script>
 (function(){try{var d=document.documentElement,r=matchMedia('(prefers-reduced-motion: reduce)').matches,m=localStorage.getItem('popolab-motion'),i=localStorage.getItem('popolab-intro');if(!r&&m!=='off'&&i!=='off'&&!location.hash){d.classList.add('swarm-pending');setTimeout(function(){if(!window.POPOLAB_SWARM_STARTED)d.classList.remove('swarm-pending')},3500)}}catch(e){}})();
 </script>
@@ -35,7 +35,7 @@
   <div class="bar">
     <a class="logo" href="/" aria-label="POPOLAB 首頁" data-build>POPOLAB<span class="dot"></span></a>
     <nav class="nav" aria-label="主選單" data-build>
-      <a href="/#work">作品</a><a href="/#numbers">數據</a><a href="/#craft">過程</a><a href="/#journey">歷程</a><a href="/#contact">合作</a>
+      <a href="/#work">作品</a><a href="/#packs">教學包</a><a href="/#numbers">數據</a><a href="/#craft">過程</a><a href="/#journey">歷程</a><a href="/#contact">合作</a>
     </nav>
     <div class="hd-right" data-build>
       <button class="motion-toggle" type="button" aria-pressed="true" title="開關動態效果"><span class="ic">▶</span><span class="tx">動態</span><span class="st">開</span></button>
@@ -72,8 +72,9 @@
       <a class="btn btn-line" href="/works/fertility-test/">先玩測驗 <span class="arr">→</span></a>
     </div>
   </section>
+  <div class="pack-strip rv-up"><p><b>教學包</b>　這支 MV 的完整製作過程：16 章、160 則指令原文、59 支靜音短片。</p><a class="link" href="/packs/next-gen-mv/">看教學包內容 <b>→</b></a></div>
 
-  <div class="w-stats rv-up"><div class="w-stat"><div class="n">4,698<small></small></div><p class="t">份玩家分享，地圖和 MV 上的光點</p></div><div class="w-stat"><div class="n">v63<small></small></div><p class="t">上傳的那一版，內部版本號</p></div><div class="w-stat"><div class="n">165<small></small></div><p class="t">BPM，整支 MV 都對齊這個節拍</p></div></div><p class="foot-note w-note">地圖和 MV 用的是 2026/10/24 的資料快照；到 2026/11/12，累積分享已經超過 4,700 份。</p>
+  <div class="w-stats rv-up"><div class="w-stat"><div class="n">4,698<small></small></div><p class="t">份玩家分享，地圖和 MV 上的光點</p></div><div class="w-stat"><div class="n">v64<small></small></div><p class="t">成片的內部版本號</p></div><div class="w-stat"><div class="n">165<small></small></div><p class="t">BPM，整支 MV 都對齊這個節拍</p></div></div><p class="foot-note w-note">地圖和 MV 用的是 2026/10/24 的資料快照；到 2026/11/12，累積分享已經超過 4,700 份。</p>
 
   <section class="w-body">
     <div class="w-aside rv-up"><div class="sticky"><p class="label">About / <b>關於作品</b></p><h2>The<br><span class="r">work.</span></h2></div></div>
@@ -100,7 +101,7 @@
 <div class="tip"><span class="tn">03</span><b>畫面層次跟著音樂分</b><p>一小節一個想法；第一拍切鏡；前半小節結束才進文字；十六分音符只給小動態，例如曲線末端的跳動。</p></div>
 </div>
 <h3><span class="hn">04</span>改了幾版</h3>
-<p>第一版 Claude 一口氣做完全片，大方向對，但光點太透明、有光暈，看起來很廉價，運鏡亂變速，還有很多關鍵畫面失焦。我沒有叫它全部重來，而是換了方法：<strong>挑一段，先把一張畫面做到完美，再做那段動畫，把問題和正確做法整理成一份設計準則，再套用到其他段落。</strong>之後就是一段一段磨，連文字大小都統一成固定的幾級。上傳的那版，內部檔名已經編到 v63。</p>
+<p>第一版 Claude 一口氣做完全片，大方向對，但光點太透明、有光暈，看起來很廉價，運鏡亂變速，還有很多關鍵畫面失焦。我沒有叫它全部重來，而是換了方法：<strong>挑一段，先把一張畫面做到完美，再做那段動畫，把問題和正確做法整理成一份設計準則，再套用到其他段落。</strong>之後就是一段一段磨，連文字大小都統一成固定的幾級。到成片的時候，版本號已經編到 v64。</p>
 <h3><span class="hn">05</span>踩過的坑</h3>
 <ul class="dash">
 <li><strong>雲端渲染太慢：</strong>雲端環境沒有顯示卡，一格要 1.5 秒左右，整支將近 3 小時。改用自己的電腦之後，重畫幾段大約十幾分鐘。</li>
@@ -113,6 +114,24 @@
 <div class="prompt"><span class="pl">開場</span>我想製作一段極簡科技感 MV，主軸就是以這個可視化資料庫來講述一系列想法，配上這段配樂。大致的大綱我已經構思好了，請你先分析這段配樂的每個段落……具體的卡點方式、鏡頭運鏡、文字、其他可視化元素以及視覺化設計，之後還是要由你來設計。</div>
 <div class="prompt"><span class="pl">要求重做，而不是錄影</span>你是重新建立一個用來渲染影片的代碼，目前的可視化資料庫你只會作為素材……這樣就可以做出一些很酷的效果，像是展示各城市資料建置的橋段畫面就是路線一條條蔓延開來，原點一顆顆被點亮。</div>
 <div class="prompt"><span class="pl">改流程</span>我會選擇一段分鏡……讓你先做出完美的單禎畫面，然後再讓你用這個畫面製作出整段分鏡動畫……你就可以舉一反三做出改良版的第二版。</div></div>
+  </section>
+
+  <section class="pack-promo rv-up" aria-label="NEXT GEN MV 製作全紀錄教學包">
+    <a class="pp-img" href="/packs/next-gen-mv/"><img src="/assets/packs/next-gen-mv/cover.webp" alt="NEXT GEN MV 製作全紀錄教學包封面" width="1200" height="630" loading="lazy"></a>
+    <div class="pp-body">
+      <span><span class="pk-tag">教學包</span></span>
+      <h2>Want the<br><span class="r">full story?</span></h2>
+      <p class="lede">上面是免費的精簡版。完整的製作過程整理成一份離線網頁教學包：照製作順序分成 16 章，從第一版粗剪一路看到 v64 成片，每一次修改前後差在哪裡都看得到。</p>
+      <div class="vs">
+        <div><b>免費 ・ 這一頁</b><ul><li>發想與流程概覽</li><li>三個關鍵技巧</li><li>踩過的坑重點</li><li>三段開場提示詞</li></ul></div>
+        <div class="paid"><b>教學包</b><ul><li>16 章主教學＋7 個附錄</li><li>160 則指令原文</li><li>24 組版本前後對照、59 支短片</li><li>42 條設計準則、39 則踩坑解法</li></ul></div>
+      </div>
+      <div class="pc-actions">
+        <a class="btn btn-red" href="/packs/next-gen-mv/">看教學包內容 <span class="arr">→</span></a>
+        <a class="btn btn-line" aria-disabled="true" role="link" title="教學包即將上架">即將上架 <span class="arr">↗</span></a>
+        <p class="price tbd">價格即將公布</p>
+      </div>
+    </div>
   </section>
 
   <div class="gallery rv-up"><figure class="wide"><img src="/assets/works/next-gen/shot-01.webp" alt="NEXT GEN &amp; MV 畫面 1" width="1600" height="1000" loading="lazy"></figure><figure><img src="/assets/works/next-gen/shot-02.webp" alt="NEXT GEN &amp; MV 畫面 2" width="1600" height="1000" loading="lazy"></figure><figure><img src="/assets/works/next-gen/shot-03.webp" alt="NEXT GEN &amp; MV 畫面 3" width="1600" height="1000" loading="lazy"></figure><figure><img src="/assets/works/next-gen/shot-04.webp" alt="NEXT GEN &amp; MV 畫面 4" width="1600" height="1000" loading="lazy"></figure></div>
@@ -128,6 +147,7 @@
     <div class="end-btns">
       <a class="btn btn-red" href="https://www.threads.com/@popolab_tw" target="_blank" rel="noopener"><span>追蹤 Threads @popolab_tw<small>下一個作品做好，會先發在這裡</small></span><span class="arr">↗</span></a>
       <a class="btn btn-line" href="https://portaly.cc/popolab_tw/support?utm_source=popolab-site&amp;utm_medium=work-next-gen" target="_blank" rel="noopener"><span>贊助支持<small>作品都免費，贊助讓我能繼續做下一個</small></span><span class="arr">↗</span></a>
+      <a class="btn btn-line" href="/packs/next-gen-mv/"><span>NEXT GEN MV 製作全紀錄<small>完整製作過程教學包：16 章、160 則指令原文</small></span><span class="arr">→</span></a>
     </div>
   </section>
 
@@ -142,7 +162,7 @@
     <p class="ft-mega" aria-hidden="true">POPOLAB</p>
     <div>
       <div class="ft-links">
-        <a href="/">首頁</a><a href="/#work">所有作品</a><a href="https://www.threads.com/@popolab_tw" target="_blank" rel="noopener">Threads</a><a href="https://portaly.cc/popolab_tw/support?utm_source=popolab-site&amp;utm_medium=footer" target="_blank" rel="noopener">贊助</a><a href="https://github.com/popolab-tw" target="_blank" rel="noopener">GitHub</a><button type="button" data-replay>重播開場</button>
+        <a href="/">首頁</a><a href="/#work">所有作品</a><a href="/packs/next-gen-mv/">教學包</a><a href="https://www.threads.com/@popolab_tw" target="_blank" rel="noopener">Threads</a><a href="https://portaly.cc/popolab_tw/support?utm_source=popolab-site&amp;utm_medium=footer" target="_blank" rel="noopener">贊助</a><a href="https://github.com/popolab-tw" target="_blank" rel="noopener">GitHub</a><button type="button" data-replay>重播開場</button>
       </div>
       <p class="ft-copy" style="margin-top:12px">本站用 GoatCounter 統計瀏覽次數，不使用 cookie、不記錄個人資料；影片在你按下播放後才會連到 YouTube。</p>
     </div>
