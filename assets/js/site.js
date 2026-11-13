@@ -1,4 +1,4 @@
-/* POPOLAB 作品網站：共用互動（無追蹤、無分析） */
+/* POPOLAB 作品網站：共用互動（這個檔案不做任何追蹤；瀏覽人次由 GoatCounter 計算） */
 (function () {
   'use strict';
   var root = document.documentElement;
@@ -166,4 +166,59 @@
       if (window.POPOLAB_SWARM) setTimeout(function () { window.POPOLAB_SWARM.replay(); }, 60);
     });
   });
+
+  /* ---- 圖片放大（教學包圖組） ---- */
+  var zooms = Array.prototype.slice.call(document.querySelectorAll('[data-zoom]'));
+  if (zooms.length) {
+    var lb = document.createElement('div');
+    lb.className = 'lb'; lb.hidden = true;
+    lb.setAttribute('role', 'dialog'); lb.setAttribute('aria-modal', 'true'); lb.setAttribute('aria-label', '放大檢視');
+    lb.innerHTML = '<div class="lb-top"><p class="label">Preview / <b class="lb-n"></b></p><button class="lb-btn lb-close" type="button" aria-label="關閉">✕</button></div>' +
+      '<div class="lb-stage"><img alt=""><button class="lb-btn lb-prev" type="button" aria-label="上一張">←</button><button class="lb-btn lb-next" type="button" aria-label="下一張">→</button></div>' +
+      '<p class="lb-cap"></p>';
+    document.body.appendChild(lb);
+    var lbImg = lb.querySelector('img'), lbCap = lb.querySelector('.lb-cap'), lbN = lb.querySelector('.lb-n'), cur = 0, opener = null;
+    var show = function (i) {
+      cur = (i + zooms.length) % zooms.length;
+      var a = zooms[cur];
+      lbImg.src = a.getAttribute('href');
+      lbImg.alt = a.getAttribute('data-cap') || '';
+      lbCap.textContent = a.getAttribute('data-cap') || '';
+      lbN.textContent = String(cur + 1).padStart(2, '0') + ' / ' + String(zooms.length).padStart(2, '0');
+    };
+    var close = function () {
+      lb.hidden = true; document.documentElement.classList.remove('lb-open');
+      if (opener) opener.focus();
+    };
+    zooms.forEach(function (a, i) {
+      a.addEventListener('click', function (e) {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+        e.preventDefault(); opener = a; show(i);
+        lb.hidden = false; document.documentElement.classList.add('lb-open');
+        lb.querySelector('.lb-close').focus();
+      });
+    });
+    lb.querySelector('.lb-close').addEventListener('click', close);
+    lb.querySelector('.lb-prev').addEventListener('click', function () { show(cur - 1); });
+    lb.querySelector('.lb-next').addEventListener('click', function () { show(cur + 1); });
+    lb.addEventListener('click', function (e) { if (e.target === lb || e.target.classList.contains('lb-stage')) close(); });
+    document.addEventListener('keydown', function (e) {
+      if (lb.hidden) return;
+      if (e.key === 'Escape') close();
+      else if (e.key === 'ArrowLeft') show(cur - 1);
+      else if (e.key === 'ArrowRight') show(cur + 1);
+      else if (e.key === 'Tab') {
+        var f = Array.prototype.slice.call(lb.querySelectorAll('button')), k = f.indexOf(document.activeElement);
+        e.preventDefault(); f[(k + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus();
+      }
+    });
+    /* 手機：左右滑動換圖 */
+    var sx = null;
+    lb.addEventListener('touchstart', function (e) { sx = e.touches[0].clientX; }, { passive: true });
+    lb.addEventListener('touchend', function (e) {
+      if (sx === null) return;
+      var dx = e.changedTouches[0].clientX - sx; sx = null;
+      if (Math.abs(dx) > 50) show(cur + (dx < 0 ? 1 : -1));
+    });
+  }
 })();
